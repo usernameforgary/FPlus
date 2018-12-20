@@ -1,0 +1,24 @@
+# Test for internationalization
+# Copyright (C) 2018 Gary
+# Gary <usernameforgary@gmail.com>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-12-19 00:25+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=cp1252\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ExamplePanel.py:24
+msgid "Enter here your name"
+msgstr "请输入姓名"
+
+#: ExamplePanel.py:30
+msgid "How did you hear from us ?"
+msgstr "你从什么渠道知道我们？"
