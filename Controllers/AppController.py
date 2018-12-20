@@ -16,4 +16,3 @@ class AppController:
 	def showProjectViewGUI(self):
 		self.projectViewGUI = ProjectViewGUI(None)	
 		self.projectViewGUI.Show()
-
