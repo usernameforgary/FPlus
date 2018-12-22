@@ -1,7 +1,7 @@
 import wx
-from Controllers.AppController import AppController
+from controllers.AppController import AppController
 
 
-app = wx.App(None)
+app = wx.App(redirect=True)
 appC = AppController()
 app.MainLoop()

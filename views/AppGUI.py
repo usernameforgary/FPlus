@@ -3,7 +3,7 @@ import wx.aui
 
 from pubsub import pub
 
-from Topics.Topics import AppGUITopics
+from topics.Topics import AppGUITopics
 
 class AppGUI(wx.Frame):
 

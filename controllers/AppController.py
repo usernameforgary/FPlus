@@ -1,9 +1,10 @@
 from pubsub import pub
 
-from Topics.Topics import AppGUITopics
+from topics.Topics import AppGUITopics
 
-from Views.AppGUI import AppGUI
-from Views.ProjectViewGUI import ProjectViewGUI
+from views.AppGUI import AppGUI
+from controllers.ProjectViewController import ProjectViewController
+from views.ProjectViewGUI import ProjectViewGUI
 
 class AppController:
 
@@ -11,8 +12,9 @@ class AppController:
 		self.appGui = AppGUI(None)
 		self.appGui.Show()
 
+		# subscribe events
 		pub.subscribe(self.showProjectViewGUI, AppGUITopics.SHOW_PROEJCT_VIEW_GUI.value)
 
 	def showProjectViewGUI(self):
-		self.projectViewGUI = ProjectViewGUI(None)	
-		self.projectViewGUI.Show()
+		self.projectViewController = ProjectViewController()
+		self.projectViewController.showProjectView()
