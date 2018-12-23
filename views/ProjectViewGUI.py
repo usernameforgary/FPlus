@@ -7,6 +7,7 @@ from pubsub import pub
 
 from topics.Topics import ProjectViewTopics
 from enumObjs.EnumObjs import ElementType
+from models.view_models.TreeItem import TreeItem
 
 class ProjectViewGUI(wx.Frame):
 
@@ -101,7 +102,8 @@ class ProjectViewGUI(wx.Frame):
 	def modelNewProject(self, modelData):
 		rootItem = self.projectTreeCtrl.GetRootItem()
 		if(rootItem is None):
-			root = self.projectTreeCtrl.AddRoot(modelData.projectName, data= ElementType.PROJECT)
+			treeItemViewModel = TreeItem(ElementType.PROJECT, [0], modelData.projectName)	
+			root = self.projectTreeCtrl.AddRoot(modelData.projectName, data = treeItemViewModel)
 		else:
 			self.projectViewStatusBar.SetStatusText('Project already exists')
 
@@ -115,23 +117,31 @@ class ProjectViewGUI(wx.Frame):
 		menu = wx.Menu()
 		pt = event.GetPosition();
 		item, flags = self.projectTreeCtrl.HitTest(pt)
-		itemPyData = self.projectTreeCtrl.GetPyData(item)
-		if itemPyData == ElementType.PROJECT:
-			addProcutRightMenu = menu.Append(wx.ID_ANY,"Add Product")
-			self.Bind(wx.EVT_MENU, self.menuAddNewProduct, addProcutRightMenu)
-		elif itemPyData == ElementType.PRODUCT:
-			addTuningPhaseMenu = menu.Append(wx.ID_ANY, "Duplicate")
-			self.Bind(wx.EVT_MENU, self.menuDuplicate, addTuningPhaseMenu)
+		# itemPyData is an instance of TreeItem
+		if item is not None:
+			itemPyData = self.projectTreeCtrl.GetPyData(item)
+			itemType = itemPyData.itemType
+			if itemType is ElementType.PROJECT:
+				addProcutRightMenu = menu.Append(wx.ID_ANY,"Add Product")
+				self.Bind(wx.EVT_MENU, self.menuAddNewProduct, addProcutRightMenu)
+			elif itemType is ElementType.PRODUCT:
+				addTuningPhaseMenu = menu.Append(wx.ID_ANY, "Duplicate")
+				self.Bind(wx.EVT_MENU, self.menuDuplicate, addTuningPhaseMenu)
 
-		self.PopupMenu(menu)
+			self.PopupMenu(menu)
 
 	def OnProjectTreeLabelBeginEdit(self, event):
 		item = event.GetItem()
-		print(self.projectTreeCtrl.GetItemText(item))
+		#print(self.projectTreeCtrl.GetItemText(item))
+
 
 	def OnProjectTreeLabelEndEdit(self, event):
 		item = event.GetItem()
-		print(self.projectTreeCtrl.GetItemText(item))
+		itemText = item.GetText()
+		itemPyData = self.projectTreeCtrl.GetPyData(item)
+
+		itemPyData.itemText = itemText
+		pub.sendMessage(ProjectViewTopics.GUI_TREE_ITEM_RENAME.value, modelData=itemPyData)
 
 	def menuAddNewProduct(self, event):
 		pub.sendMessage(ProjectViewTopics.GUI_NEW_PRDUCT.value)
@@ -142,6 +152,7 @@ class ProjectViewGUI(wx.Frame):
 		pub.sendMessage(ProjectViewTopics.GUI_DUPLICATE_TUNNING_PAHSE.value)
 
 	def modelNewProduct(self, newProduct):
-		root = self.projectTreeCtrl.GetRootItem()		
-		self.projectTreeCtrl.AppendItem(root, newProduct.productName, data = ElementType.PRODUCT)
-		print('llllllll____product re')
+		root = self.projectTreeCtrl.GetRootItem()
+		existProductCount = self.projectTreeCtrl.GetChildrenCount(root, recursively=False)
+		treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, existProductCount])
+		self.projectTreeCtrl.AppendItem(root, newProduct.productName, data = treeItemViewModel)
