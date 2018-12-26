@@ -1,3 +1,5 @@
+from .ProjectTree import ProjectTree
+
 class ProjectViewModel:
 	def __init__(self):
-		self.projectTree = None
+		self.projectTree: ProjectTree = None

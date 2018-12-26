@@ -9,10 +9,14 @@ from topics.Topics import ProjectViewTopics
 from enumObjs.EnumObjs import ElementType
 from models.view_models.TreeItem import TreeItem
 
+from .TopologyGUI import TopologyGUI
+
 class ProjectViewGUI(wx.Frame):
 
 	def __init__( self, parent ):
-		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+		#wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+		#super().__init__ (parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+		super().__init__ (parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
 
 		self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
 		#Font
@@ -36,65 +40,42 @@ class ProjectViewGUI(wx.Frame):
 		self.SetMenuBar( self.viewProjectMenubar )
 
 		# Sizer
-		mainSizer = wx.BoxSizer( wx.VERTICAL )
-		leftSizer = wx.BoxSizer( wx.HORIZONTAL )
+		self.mainSizer = wx.BoxSizer( wx.HORIZONTAL)
+		self.leftSizer = wx.BoxSizer(wx.VERTICAL)
+		self.rightSizer = wx.BoxSizer(wx.VERTICAL)
+		ttButton = wx.Button(self, label="Right Sizer init button")
+		self.rightSizer.Add(ttButton, 1, wx.ALL|wx.EXPAND, 0)
 
 		# Project tree
 		self.projectTreeCtrl = customtreectrl.CustomTreeCtrl( self, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize, 
 																													style=0, agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_EDIT_LABELS, validator=wx.DefaultValidator)
 
-		leftSizer.Add( self.projectTreeCtrl, 1, wx.ALL|wx.EXPAND, 5 )
-		rightGridSizer = wx.GridBagSizer(hgap=1, vgap=1)
+		self.leftSizer.Add( self.projectTreeCtrl, 1, wx.ALL|wx.EXPAND, 0)
 
-		self.m_grid1 = wx.grid.Grid( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.mainSizer.Add(self.leftSizer, 1, wx.ALL | wx.EXPAND, 0)
+		self.mainSizer.Add(self.rightSizer, 5, wx.ALL | wx.EXPAND, 0)
 
-		# Grid
-		self.m_grid1.CreateGrid( 5, 5 )
-		self.m_grid1.EnableEditing( False )
-		self.m_grid1.EnableGridLines( True )
-		self.m_grid1.EnableDragGridSize( False )
-		self.m_grid1.SetMargins( 0, 0 )
+		self.SetSizer(self.mainSizer)
 
-		# Columns
-		self.m_grid1.EnableDragColMove( False )
-		self.m_grid1.EnableDragColSize( True )
-		self.m_grid1.SetColLabelSize( 30 )
-		self.m_grid1.SetColLabelAlignment( wx.ALIGN_CENTER, wx.ALIGN_CENTER )
-
-		# Rows
-		self.m_grid1.EnableDragRowSize( True )
-		self.m_grid1.SetRowLabelSize( 80 )
-		self.m_grid1.SetRowLabelAlignment( wx.ALIGN_CENTER, wx.ALIGN_CENTER )
-
-		# Label Appearance
-
-		# Cell Defaults
-		self.m_grid1.SetDefaultCellAlignment( wx.ALIGN_LEFT, wx.ALIGN_TOP )
-		rightGridSizer.Add( self.m_grid1, pos=(0,0) )
-
-
-		leftSizer.Add( rightGridSizer, 1, wx.EXPAND, 5 )
-
-
-		mainSizer.Add( leftSizer, 1, wx.EXPAND, 5 )
-
-
-		self.SetSizerAndFit(mainSizer)
-		self.Layout()
 		self.projectViewStatusBar = self.CreateStatusBar( 1, wx.STB_SIZEGRIP, wx.ID_ANY )
 
-		self.Centre( wx.HORIZONTAL)
+		self.Centre()
 
 		# connect event
 		self.Bind(wx.EVT_TOOL, self.newProject ,self.newProjectMenuItem)
 		self.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.OnProjectTreeLabelBeginEdit, self.projectTreeCtrl)
 		self.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnProjectTreeLabelEndEdit, self.projectTreeCtrl)
+		self.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnProjectTreeItemSelected, self.projectTreeCtrl)
 		self.projectTreeCtrl.Bind(wx.EVT_RIGHT_DOWN, self.onRightDown)
 		self.projectTreeCtrl.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+
 
 		# subscribe topics
 		pub.subscribe(self.modelNewProject, ProjectViewTopics.MODEL_NEW_PROJECT.value)
 		pub.subscribe(self.modelNewProduct, ProjectViewTopics.MODEL_NEW_PRODUCT.value)
+		# subscribe SHOW_TOPOLOGY topic from TopologyController
+		pub.subscribe(self.showTopology, ProjectViewTopics.MODEL_SHOW_TOPOLOGY.value)
+
 
 	def newProject(self, event):
 		pub.sendMessage(ProjectViewTopics.GUI_NEW_PROJECT.value)
@@ -156,3 +137,22 @@ class ProjectViewGUI(wx.Frame):
 		existProductCount = self.projectTreeCtrl.GetChildrenCount(root, recursively=False)
 		treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, existProductCount])
 		self.projectTreeCtrl.AppendItem(root, newProduct.productName, data = treeItemViewModel)
+
+	def OnProjectTreeItemSelected(self, event):
+		item = event.GetItem()
+		itemPyData = self.projectTreeCtrl.GetPyData(item)
+		pub.sendMessage(ProjectViewTopics.GUI_TREE_ITEM_SELECTED.value, modelData = itemPyData)
+
+	def showTopology(self, topology):
+		self.cleanRightSizer()	
+		topologyGUI = TopologyGUI(self, topology)
+		self.rightSizer.Add(topologyGUI, 1, wx.ALL|wx.EXPAND, 0)
+		self.rightSizer.Layout()
+
+	def cleanRightSizer(self):
+		sizerItemList = self.rightSizer.GetChildren()
+		if sizerItemList:
+			for i in range(len(sizerItemList)):
+				self.rightSizer.Hide(i)
+				self.rightSizer.Remove(i)
+			self.rightSizer.Layout()

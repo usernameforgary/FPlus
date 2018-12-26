@@ -12,3 +12,6 @@ class ProjectViewTopics(Enum):
 	MODEL_NEW_PRODUCT = 'MODEL_New_Product'
 	GUI_DUPLICATE_TUNNING_PAHSE = 'GUI_Duplicate_Tuning_PHASE'
 	GUI_TREE_ITEM_RENAME = 'GUI_Tree_Item_Rename'
+	GUI_TREE_ITEM_SELECTED = 'GUI_Tree_Item_Selected'
+	GUI_SHOW_TOPOLOGY = 'GUI_Show_Topology'
+	MODEL_SHOW_TOPOLOGY = 'MODEL_Show_Topology'
