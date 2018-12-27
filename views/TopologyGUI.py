@@ -19,8 +19,6 @@ class TopologyGUI(wx.Panel):
 		self.drawTypeSelected: str = DrawElementType.SELECT.value
 		# stored all points(DraggablePoint)
 		self.viewModel = TopologyViewModel()
-		self.points = []
-		self.lines = []
 		# start position of DarggableLine while drawing, type tuble
 		self.drawingLineStart = None
 		self.selectedDraggableLine = None
@@ -98,6 +96,8 @@ class TopologyGUI(wx.Panel):
 					deleteLine = self.selectedDraggableLine
 					# remove reference in points which this line connected.
 					self.removeLine(deleteLine)
+					# remove line in view model
+					self.addOrRemovePointOrLine(self.viewModel.lines, deleteLine, False)
 					deleteLine.remove()
 					self.canvas.draw()
 					# This set vary important. Other wise, can not select other line
@@ -107,6 +107,8 @@ class TopologyGUI(wx.Panel):
 					deletePoint = self.selectedDraggablePoint
 					# remove lines in siblings connected with this point
 					self.removePoint(deletePoint)
+					# remove points in viewModel
+					self.addOrRemovePointOrLine(self.viewModel.points, deletePoint, False)
 					DraggableLine.picking = None
 					deletePoint.remove()
 					# This set vary important. Other wise, can not select other point 
@@ -114,6 +116,7 @@ class TopologyGUI(wx.Panel):
 					DraggablePoint.picking = None
 					self.selectedDraggablePoint = None
 
+	# remove reference to this point, in Two connected Point
 	def removeLine(self, deleteLine):
 		for connectP in deleteLine.points:
 			for line in connectP.toMeLines:
@@ -133,6 +136,8 @@ class TopologyGUI(wx.Panel):
 					for fromPLine in connectP.fromMeLines:
 						if fromPLine is line:
 							connectP.fromMeLines.remove(line)
+			# view model remove this line
+			self.addOrRemovePointOrLine(self.viewModel.lines, line, False)
 			line.remove()
 		for line in deletePoint.fromMeLines:
 			for connectP in line.points:
@@ -143,6 +148,8 @@ class TopologyGUI(wx.Panel):
 					for fromPLine in connectP.fromMeLines:
 						if fromPLine is line:
 							connectP.fromMeLines.remove(line)
+			# view model remove this line
+			self.addOrRemovePointOrLine(self.viewModel.lines, line, False)
 			line.remove()
 
 	def onPick(self, event):
@@ -191,7 +198,7 @@ class TopologyGUI(wx.Panel):
 						self.axes.add_patch(circle)
 						circle.connect()	
 						# Add new Point
-						self.points.append(circle)
+						self.addOrRemovePointOrLine(self.viewModel.points, circle, True)
 						self.canvas.draw()
 				else:
 					pass
@@ -211,7 +218,7 @@ class TopologyGUI(wx.Panel):
 		startPoint = None
 		stopClosestPoint = None
 		closestDistance = None
-		for point in self.points:
+		for point in self.viewModel.points:
 			pCenterX, pCenterY = point.center
 			if pCenterX == startX and pCenterY == startY:
 				startPoint = point	
@@ -228,9 +235,25 @@ class TopologyGUI(wx.Panel):
 				newLine.points.append(startPoint)
 				newLine.points.append(stopClosestPoint)
 				#new line add two points it connected. COMMENT stop 
+				# viewModel add new line
+				self.addOrRemovePointOrLine(self.viewModel.lines, newLine, True)
 				self.axes.add_line(newLine)
 				self.canvas.draw()	
 				startPoint.fromMeLines.append(newLine)
 				stopClosestPoint.toMeLines.append(newLine)
 
-	
+	# Add(remove) points or lines to view model
+	def addOrRemovePointOrLine(self, lists, element, isAdd=True):
+		if lists is not None and element is not None:
+			if lists is self.viewModel.points:
+				if isAdd:
+					self.viewModel.addPoint(element)
+				else:
+					self.viewModel.removePoint(element)
+				print('Points::::view model updated, have points: '+ str(len(self.viewModel.points)) +' , lines: ' + str(len(self.viewModel.lines)))
+			elif lists is self.viewModel.lines:
+				if isAdd:
+					self.viewModel.addLine(element)
+				else:
+					self.viewModel.removeLine(element)
+				print('Points::::view model updated, have points: '+ str(len(self.viewModel.points)) +' , lines: ' + str(len(self.viewModel.lines)))
