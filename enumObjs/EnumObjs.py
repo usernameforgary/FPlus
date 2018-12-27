@@ -10,6 +10,7 @@ class ElementType(Enum):
 class PointType(Enum):
 	CAVITY = 'CAVITY'
 	COUPLING = 'COUPLING'
+	PORT = 'PORT'
 
 @unique
 class DrawElementType(Enum):
