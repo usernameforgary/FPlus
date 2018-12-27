@@ -2,6 +2,7 @@ import wx
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.colors as mcolors
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.lines import Line2D
 
@@ -18,6 +19,8 @@ class TopologyGUI(wx.Panel):
 		self.points = []
 		# start position of DarggableLine while drawing, type tuble
 		self.drawingLineStart = None
+		self.selectedDraggableLine = None
+		self.selectedDraggablePoint = None
 		# main sizer, contains every thing		
 		sizer = wx.BoxSizer(wx.VERTICAL)
 		# topology sizer
@@ -72,16 +75,90 @@ class TopologyGUI(wx.Panel):
 		DraggablePoint.selectedDrawType = typeRadioSelected.GetLabel()
 
 	def connect(self):
+		# mouse button click event
 		self.cidpress = self.canvas.mpl_connect('button_press_event', self.onPress)
+		# mouse button release event
 		self.cidrelease = self.canvas.mpl_connect('button_release_event', self.onRelease)
+		# mouse button moving event
 		self.cidmotion = self.canvas.mpl_connect('motion_notify_event', self.onMotion)
+		# canvas pick up pickable element event
 		self.pick = self.canvas.mpl_connect('pick_event', self.onPick)
+		# canvas key press event
+		self.onKeyPress = self.canvas.mpl_connect('key_press_event', self.onKey)
+
+	# canvas key press event handler
+	def onKey(self, event):
+		if event.key == 'delete':
+			if self.drawTypeSelected == DrawElementType.SELECT.value:
+				if self.selectedDraggableLine is not None:
+					deleteLine = self.selectedDraggableLine
+					# remove reference in points which this line connected.
+					self.removeLine(deleteLine)
+					deleteLine.remove()
+					self.canvas.draw()
+					# This set vary important. Other wise, can not select other line
+					DraggableLine.picking = None
+					self.selectedDraggableLine = None
+				elif self.selectedDraggablePoint is not None:
+					deletePoint = self.selectedDraggablePoint
+					# remove lines in siblings connected with this point
+					self.removePoint(deletePoint)
+					DraggableLine.picking = None
+					deletePoint.remove()
+					# This set vary important. Other wise, can not select other point 
+					self.canvas.draw()
+					DraggablePoint.picking = None
+					self.selectedDraggablePoint = None
+
+	def removeLine(self, deleteLine):
+		for connectP in deleteLine.points:
+			for line in connectP.toMeLines:
+				if line is deleteLine:
+					connectP.toMeLines.remove(line)
+			for line in connectP.fromMeLines:
+				if line is deleteLine:
+					connectP.fromMeLines.remove(line)
+
+	def removePoint(self, deletePoint):
+		for line in deletePoint.toMeLines:
+			for connectP in line.points:
+				if connectP is not deletePoint:
+					for toPLine in connectP.toMeLines:
+						if toPLine is line:
+							connectP.toMeLines.remove(line)
+					for fromPLine in connectP.fromMeLines:
+						if fromPLine is line:
+							connectP.fromMeLines.remove(line)
+			line.remove()
+		for line in deletePoint.fromMeLines:
+			for connectP in line.points:
+				if connectP is not deletePoint:
+					for toPLine in connectP.toMeLines:
+						if toPLine is line:
+							connectP.toMeLines.remove(line)
+					for fromPLine in connectP.fromMeLines:
+						if fromPLine is line:
+							connectP.fromMeLines.remove(line)
+			line.remove()
 
 	def onPick(self, event):
 		if event.artist:
+			# Select draw element allowed
 			if self.drawTypeSelected == DrawElementType.SELECT.value:
+				# change selected Point and Line
+				if(isinstance(event.artist, DraggablePoint)):
+					self.selectedDraggablePoint = event.artist
+					if self.selectedDraggableLine is not None:
+						self.selectedDraggableLine.switchSeletedStyle(toDefault=True)
+						self.selectedDraggableLine = None
+				elif (isinstance(event.artist, DraggableLine)):
+					self.selectedDraggableLine = event.artist
+					if self.selectedDraggablePoint is not None:
+						self.selectedDraggablePoint.switchSeletedStyle(toDefault=True)
+						self.selectedDraggablePoint = None
 				event.artist.onPick(event)
 			elif self.drawTypeSelected == DrawElementType.LINE.value:
+				# draw line
 				pickedArtist = event.artist	
 				if isinstance(pickedArtist, DraggablePoint):
 					self.drawingLineStart = event.artist.center
@@ -99,11 +176,11 @@ class TopologyGUI(wx.Panel):
 						return	
 					circle = None
 					if self.drawTypeSelected == DrawElementType.CAVITY.value:
-						circle = DraggablePoint((xdata, ydata), 2.5, facecolor='black', edgecolor="black", alpha=None)
+						circle = DraggablePoint((xdata, ydata), 2.5, facecolor='black', edgecolor="black", alpha=None, pointType=DrawElementType.CAVITY.value)
 					elif self.drawTypeSelected == DrawElementType.COUPLING.value:
-						circle = DraggablePoint((xdata, ydata), 1.5, facecolor='black', edgecolor="black", alpha=None)
+						circle = DraggablePoint((xdata, ydata), 1.5, facecolor='black', edgecolor="black", alpha=None, pointType=DrawElementType.COUPLING.value)
 					elif self.drawTypeSelected == DrawElementType.PORT.value:
-						circle = DraggablePoint((xdata, ydata), 2.5, facecolor='none', edgecolor="black", alpha=None)
+						circle = DraggablePoint((xdata, ydata), 2.5, facecolor='none', edgecolor="black", alpha=None, pointType=DrawElementType.PORT.value)
 
 					if circle is not None:
 						self.axes.add_patch(circle)
@@ -118,8 +195,6 @@ class TopologyGUI(wx.Panel):
 			xStart, yStart = self.drawingLineStart
 			newLine = DraggableLine([xStart, event.xdata], [yStart, event.ydata])	
 			self.addNewLine((xStart, yStart), (event.xdata, event.ydata))
-			#self.axes.add_line(newLine)
-			#self.canvas.draw()	
 			self.drawingLineStart = None
 	
 	# startPos, stopPos are type of cuble. (xPos, yPos)
@@ -142,6 +217,10 @@ class TopologyGUI(wx.Panel):
 		if stopClosestPoint is not None:
 			pCenteX, pCenterY = stopClosestPoint.center
 			newLine = DraggableLine([startX, pCenteX], [startY, pCenterY])	
+			#new line add two points it connected. COMMENT start
+			newLine.points.append(startPoint)
+			newLine.points.append(stopClosestPoint)
+			#new line add two points it connected. COMMENT stop 
 			self.axes.add_line(newLine)
 			self.canvas.draw()	
 			startPoint.fromMeLines.append(newLine)
@@ -151,20 +230,28 @@ class DraggableLine(Line2D):
 	picking = None
 	def __init__(self, xPos, yPos, color='black', linewidth=2.0, picker=2.0):
 		super().__init__(xPos, yPos, color=color, linewidth=linewidth, picker=picker)
+		# points contains two point this line connected
+		self.points = []
 	def onPick(self, event):
 		if event.artist is self:
 			curPick = DraggableLine.picking
 			if curPick is not self:
 				if curPick is not None:
-					curPick.set_color('black')
-					curPick.axes.draw_artist(curPick)
-				self.set_color('red')
-				self.figure.canvas.draw()
+					curPick.switchSeletedStyle(toDefault=True)
+				self.switchSeletedStyle()
 				DraggableLine.picking = self
 			else:
-				self.set_color('black')
-				self.figure.canvas.draw()
+				self.switchSeletedStyle()
 				DraggableLine.picking = None
+
+	def switchSeletedStyle(self, toDefault=None):
+		if self is not None and isinstance(self, DraggableLine):
+			targetColor = 'black'
+			if(not toDefault):
+				currentColor = self.get_color()
+				targetColor = 'red' if (currentColor == 'black') else 'black'
+			self.set_color(targetColor)
+			self.figure.canvas.draw()
 
 class DraggablePoint(patches.Circle):
 	#only one can be animated at a time
@@ -173,10 +260,11 @@ class DraggablePoint(patches.Circle):
 	picking = None
 	# put this static property to get current selected type
 	selectedDrawType = None
-	def __init__(self, position, radius, facecolor, edgecolor, alpha=None):
+	def __init__(self, position, radius, facecolor, edgecolor, alpha=None, pointType = None):
 		super().__init__(position, radius, facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, picker=5)
 		self.press = None
 		self.background = None
+		self.pointType = pointType
 		#Lines draw to me
 		self.toMeLines = []
 		#Lines draw from me
@@ -193,15 +281,12 @@ class DraggablePoint(patches.Circle):
 			curPick = DraggablePoint.picking
 			if curPick is not self:
 				if curPick is not None:
-					# cancel style of previous picked element
-					curPick.set_edgecolor('black')
-					curPick.axes.draw_artist(curPick)
-				self.set_edgecolor("red")
-				self.axes.draw_artist(self)
+					# switch style of previous picked element
+					curPick.switchSeletedStyle(toDefault=True)
+				self.switchSeletedStyle()
 				DraggablePoint.picking = self
 			else:
-				self.set_edgecolor("black")
-				self.axes.draw_artist(self)
+				self.switchSeletedStyle()
 				DraggablePoint.picking = None
 
 	def on_press(self, event):
@@ -276,3 +361,12 @@ class DraggablePoint(patches.Circle):
 		self.figure.canvas.mpl_disconnect(self.cidpress)
 		self.figure.canvas.mpl_disconnect(self.cidrelease)
 		self.figure.canvas.mpl_disconnect(self.cidmotion)
+
+	def switchSeletedStyle(self, toDefault=False):
+		if self is not None and isinstance(self, DraggablePoint):
+			targetColor = 'black'
+			if(not toDefault):
+				currentEdgeColor = self.get_edgecolor()
+				targetColor = 'red' if (currentEdgeColor == mcolors.to_rgba('black')) else 'black'
+			self.set_edgecolor(targetColor)
+			self.axes.draw_artist(self)

@@ -138,9 +138,11 @@ class ProjectViewGUI(wx.Frame):
 		treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, existProductCount])
 		self.projectTreeCtrl.AppendItem(root, newProduct.productName, data = treeItemViewModel)
 
+	# project tree item selected handler
 	def OnProjectTreeItemSelected(self, event):
 		item = event.GetItem()
 		itemPyData = self.projectTreeCtrl.GetPyData(item)
+		# public tree item selected topic, controller should subscibe this topic
 		pub.sendMessage(ProjectViewTopics.GUI_TREE_ITEM_SELECTED.value, modelData = itemPyData)
 
 	def showTopology(self, topology):
