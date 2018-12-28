@@ -1,4 +1,5 @@
 import wx
+import copy
 
 from pubsub import pub
 from .TopologyController import TopologyController
@@ -9,10 +10,11 @@ from models.ProjectTree import ProjectTree
 from models.Product import Product
 from enumObjs.EnumObjs import ElementType
 
+
 class ProjectViewController:
 	def __init__(self):
-		self.gui = ProjectViewGUI(None)
 		self.model = ProjectViewModel()
+		self.gui = ProjectViewGUI(None, self.model)
 		self.topologyController = None
 
 		# subscibe events
@@ -20,6 +22,7 @@ class ProjectViewController:
 		pub.subscribe(self.newProduct, ProjectViewTopics.GUI_NEW_PRDUCT.value)
 		pub.subscribe(self.editProjectOrProductName, ProjectViewTopics.GUI_TREE_ITEM_RENAME.value)
 		pub.subscribe(self.switchProjectItem, ProjectViewTopics.GUI_TREE_ITEM_SELECTED.value)
+		pub.subscribe(self.duplicateProduct, ProjectViewTopics.GUI_DUPLICATE_PRODUCT.value)
 
 	def showProjectView(self):
 		self.gui.Show()
@@ -59,4 +62,19 @@ class ProjectViewController:
 				selectedProduct.addTopology()
 
 			self.topologyController = TopologyController(selectedProduct.topology)
-			self.topologyController.showTopology()	
+			self.topologyController.showTopology()
+	def duplicateProduct(self, data):
+		itemType = data.itemType
+		itemIndex = data.itemIndex
+		itemText = data.itemText
+		if itemIndex:
+			productIndex = itemIndex[1]
+			product = self.model.projectTree.products[productIndex]
+			newProduct = copy.deepcopy(product)
+			newProduct.productName = newProduct.productName + '_copy'
+			self.model.projectTree.products.append(newProduct)
+		self.refreshTreeContrl()
+
+	# refresh view tree control with new data
+	def refreshTreeContrl(self):
+		pub.sendMessage(ProjectViewTopics.MODEL_REFRESH_TREE_CONTRL.value, data=self.model.projectTree)

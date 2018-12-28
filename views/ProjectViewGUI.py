@@ -8,14 +8,12 @@ from pubsub import pub
 from topics.Topics import ProjectViewTopics
 from enumObjs.EnumObjs import ElementType
 from models.view_models.TreeItem import TreeItem
+from models.ProjectTree import ProjectTree
 
 from .TopologyGUI import TopologyGUI
 
 class ProjectViewGUI(wx.Frame):
-
-	def __init__( self, parent ):
-		#wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
-		#super().__init__ (parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+	def __init__( self, parent,  modelData: ProjectTree):
 		super().__init__ (parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
 
 		self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
@@ -37,13 +35,13 @@ class ProjectViewGUI(wx.Frame):
 		self.projectViewProductMenu.Append( self.addProductMenuItem )
 		self.viewProjectMenubar.Append( self.projectViewProductMenu, u"Product" )
 
-		self.SetMenuBar( self.viewProjectMenubar )
+		self.SetMenuBar(self.viewProjectMenubar )
 
 		# Sizer
 		self.mainSizer = wx.BoxSizer( wx.HORIZONTAL)
 		self.leftSizer = wx.BoxSizer(wx.VERTICAL)
 		self.rightSizer = wx.BoxSizer(wx.VERTICAL)
-		ttButton = wx.Button(self, label="Right Sizer init button")
+		ttButton = wx.StaticText(self, label = "Right Sizer init button")
 		self.rightSizer.Add(ttButton, 1, wx.ALL|wx.EXPAND, 0)
 
 		# Project tree
@@ -69,24 +67,36 @@ class ProjectViewGUI(wx.Frame):
 		self.projectTreeCtrl.Bind(wx.EVT_RIGHT_DOWN, self.onRightDown)
 		self.projectTreeCtrl.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
 
-
 		# subscribe topics
 		pub.subscribe(self.modelNewProject, ProjectViewTopics.MODEL_NEW_PROJECT.value)
 		pub.subscribe(self.modelNewProduct, ProjectViewTopics.MODEL_NEW_PRODUCT.value)
 		# subscribe SHOW_TOPOLOGY topic from TopologyController
-		pub.subscribe(self.showTopology, ProjectViewTopics.MODEL_SHOW_TOPOLOGY.value)
+		pub.subscribe(self.showProductConfig, ProjectViewTopics.MODEL_SHOW_TOPOLOGY.value)
+		pub.subscribe(self.refreshTreeContrl, ProjectViewTopics.MODEL_REFRESH_TREE_CONTRL.value)
+
+	def initialWithData(self, initialData: ProjectTree):
+		if initialData is not None:
+			projectName = initialData.projectName	
+			rootItemData = TreeItem(ElementType.PROJECT, [0], projectName)
+			self.projectTreeCtrl.AddRoot(projectName, data=rootItemData)
+			products = initialData.products
+			#for i in range(len(products)):
 
 
 	def newProject(self, event):
-		pub.sendMessage(ProjectViewTopics.GUI_NEW_PROJECT.value)
+		rootItem = self.projectTreeCtrl.GetRootItem()
+		if(rootItem is None):
+			pub.sendMessage(ProjectViewTopics.GUI_NEW_PROJECT.value)
+		else:
+			self.projectViewStatusBar.SetStatusText('Project already exists')
 
 	def modelNewProject(self, modelData):
 		rootItem = self.projectTreeCtrl.GetRootItem()
 		if(rootItem is None):
-			treeItemViewModel = TreeItem(ElementType.PROJECT, [0], modelData.projectName)	
+			treeItemViewModel = TreeItem(ElementType.PROJECT, [0], modelData.projectName)
 			root = self.projectTreeCtrl.AddRoot(modelData.projectName, data = treeItemViewModel)
 		else:
-			self.projectViewStatusBar.SetStatusText('Project already exists')
+			self.projectViewStatusBar.SetStatusText('Add project first')			
 
 	def onRightDown(self, event):
 		pt = event.GetPosition()
@@ -127,15 +137,17 @@ class ProjectViewGUI(wx.Frame):
 	def menuAddNewProduct(self, event):
 		pub.sendMessage(ProjectViewTopics.GUI_NEW_PRDUCT.value)
 
+	# Product Duplicate event handler
 	def menuDuplicate(self, event):
-		item = event.GetEventObject()
-		print(dir(self.projectTreeCtrl.GetItemData(item)))
-		pub.sendMessage(ProjectViewTopics.GUI_DUPLICATE_TUNNING_PAHSE.value)
+		item = self.projectTreeCtrl.GetSelection()
+		itemPyData = self.projectTreeCtrl.GetPyData(item)
+		if itemPyData.itemType is ElementType.PRODUCT:
+			pub.sendMessage(ProjectViewTopics.GUI_DUPLICATE_PRODUCT.value, data=itemPyData)
 
 	def modelNewProduct(self, newProduct):
 		root = self.projectTreeCtrl.GetRootItem()
 		existProductCount = self.projectTreeCtrl.GetChildrenCount(root, recursively=False)
-		treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, existProductCount])
+		treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, existProductCount], newProduct.productName)
 		self.projectTreeCtrl.AppendItem(root, newProduct.productName, data = treeItemViewModel)
 
 	# project tree item selected handler
@@ -145,7 +157,7 @@ class ProjectViewGUI(wx.Frame):
 		# public tree item selected topic, controller should subscibe this topic
 		pub.sendMessage(ProjectViewTopics.GUI_TREE_ITEM_SELECTED.value, modelData = itemPyData)
 
-	def showTopology(self, topology):
+	def showProductConfig(self, topology):
 		self.cleanRightSizer()	
 		topologyGUI = TopologyGUI(self, topology)
 		self.rightSizer.Add(topologyGUI, 1, wx.ALL|wx.EXPAND, 0)
@@ -154,7 +166,22 @@ class ProjectViewGUI(wx.Frame):
 	def cleanRightSizer(self):
 		sizerItemList = self.rightSizer.GetChildren()
 		if sizerItemList:
-			for i in range(len(sizerItemList)):
-				self.rightSizer.Hide(i)
-				self.rightSizer.Remove(i)
-			self.rightSizer.Layout()
+			for item in sizerItemList:
+				if item.IsWindow():
+					window = item.GetWindow()
+					window.Destroy()
+				else:
+					raise Exception('No-window object in rightSizer')
+
+	# refresh tree control with new data(ProjectTree)
+	def refreshTreeContrl(self, data):
+		if data is not None:
+			self.projectTreeCtrl.DeleteAllItems()
+			projectName = data.projectName	
+			rootItemData = TreeItem(ElementType.PROJECT, [0], projectName)
+			root = self.projectTreeCtrl.AddRoot(projectName, data=rootItemData)
+			i = 0
+			for product in data.products:
+				treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, i], product.productName)
+				self.projectTreeCtrl.AppendItem(root, product.productName, data = treeItemViewModel)
+				i += 1	

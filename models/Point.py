@@ -4,8 +4,8 @@ from enumObjs.EnumObjs import PointType
 from .Line import Line
 
 class Point:
-	def __init__(self, pointType: PointType, pointIndex: int, guiPositionX: float, guiPositionY: float, pointLabel: str = '',fromMeLines: List[Line] = [], toMeLines:List[Line] = []):
-		self.pointType: PointType = None
+	def __init__(self, pointType: str, pointIndex: int, guiPositionX: float, guiPositionY: float, pointLabel: str = '',fromMeLines: List[Line] = [], toMeLines:List[Line] = []):
+		self.pointType: str = None
 		self.pointLabel: str = ""
 		self.pointIndex: int = None
 

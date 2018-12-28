@@ -4,7 +4,7 @@ from .Topology import Topology
 
 class Product:
 	def __init__(self):
-		self.productName: str = 'Product1'
+		self.productName: str = 'ProductName'
 		self.topology: Topology = None
 		self.tuningPhases: List[TuningPhase] = []
 

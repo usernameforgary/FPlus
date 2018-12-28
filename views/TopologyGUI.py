@@ -1,4 +1,5 @@
 import wx
+from pubsub import pub
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -11,7 +12,11 @@ from models.view_models.DraggableLine import DraggableLine
 from models.view_models.DraggablePoint import DraggablePoint
 from models.view_models.TopologyViewModel import TopologyViewModel
 
+from topics.Topics import ProjectViewTopics
+from topics.Topics import TopoloyViewTopics
+
 class TopologyGUI(wx.Panel):
+	topoloyFigure = plt.figure()
 	def __init__(self, parent, topology: Topology):
 		super().__init__(parent)
 		self.parent = parent
@@ -50,7 +55,12 @@ class TopologyGUI(wx.Panel):
 		typeBoxSizer.Add(typeGridSizer, 0, wx.ALIGN_LEFT|wx.ALL, 5)
 		# draw type gui config: end
 
-		self.figure = plt.figure()
+		if TopologyGUI is None:
+			TopologyGUI.topoloyFigure = plt.figure()
+		else:
+			TopologyGUI.topoloyFigure.clear()
+			
+		self.figure = TopologyGUI.topoloyFigure
 		self.axes = self.figure.add_axes([0., 0., 1., 1.])
 		self.axes.set_xlim([0, 120])
 		self.axes.set_ylim([0, 80])
@@ -250,10 +260,10 @@ class TopologyGUI(wx.Panel):
 					self.viewModel.addPoint(element)
 				else:
 					self.viewModel.removePoint(element)
-				print('Points::::view model updated, have points: '+ str(len(self.viewModel.points)) +' , lines: ' + str(len(self.viewModel.lines)))
+				pub.sendMessage(TopoloyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)
 			elif lists is self.viewModel.lines:
 				if isAdd:
 					self.viewModel.addLine(element)
 				else:
 					self.viewModel.removeLine(element)
-				print('Points::::view model updated, have points: '+ str(len(self.viewModel.points)) +' , lines: ' + str(len(self.viewModel.lines)))
+				pub.sendMessage(TopoloyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)

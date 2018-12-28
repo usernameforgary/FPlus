@@ -15,3 +15,9 @@ class ProjectViewTopics(Enum):
 	GUI_TREE_ITEM_SELECTED = 'GUI_Tree_Item_Selected'
 	GUI_SHOW_TOPOLOGY = 'GUI_Show_Topology'
 	MODEL_SHOW_TOPOLOGY = 'MODEL_Show_Topology'
+	MODEL_REFRESH_TREE_CONTRL = 'MODEL_Resfresh_Tree_Contrl'
+	GUI_DUPLICATE_PRODUCT = 'GUI_Duplicate_Product'	
+
+@unique
+class TopoloyViewTopics(Enum):
+	GUI_EDIT_TOPOLOGY = 'GUI_Edit_Topology'	
