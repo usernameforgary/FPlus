@@ -2,27 +2,27 @@ import wx
 import copy
 
 from pubsub import pub
-from .TopologyController import TopologyController
 from views.ProjectViewGUI import ProjectViewGUI
 from topics.Topics import ProjectViewTopics
+from topics.Topics import TopologyViewTopics
 from models.ProjectViewModel import ProjectViewModel
 from models.ProjectTree import ProjectTree
 from models.Product import Product
 from enumObjs.EnumObjs import ElementType
-
+from .ProductConfigController import ProductConfigController
 
 class ProjectViewController:
-	def __init__(self):
-		self.model = ProjectViewModel()
+	def __init__(self, model: ProjectViewModel = None):
+		self.model = model if model is not None else ProjectViewModel()
 		self.gui = ProjectViewGUI(None, self.model)
-		self.topologyController = None
+		self.productController =  None
 
 		# subscibe events
 		pub.subscribe(self.newProject, ProjectViewTopics.GUI_NEW_PROJECT.value)
 		pub.subscribe(self.newProduct, ProjectViewTopics.GUI_NEW_PRDUCT.value)
 		pub.subscribe(self.editProjectOrProductName, ProjectViewTopics.GUI_TREE_ITEM_RENAME.value)
-		pub.subscribe(self.switchProjectItem, ProjectViewTopics.GUI_TREE_ITEM_SELECTED.value)
 		pub.subscribe(self.duplicateProduct, ProjectViewTopics.GUI_DUPLICATE_PRODUCT.value)
+		pub.subscribe(self.showProjectConfigGUI, ProjectViewTopics.GUI_SHOW_PROJECT_CONFIG.value)
 
 	def showProjectView(self):
 		self.gui.Show()
@@ -45,24 +45,12 @@ class ProjectViewController:
 			self.model.projectTree.projectName = itemText
 		elif(itemType is ElementType.PRODUCT):
 			productIndex = itemIndex[1]
-			self.model.projectTree.products[productIndex].productName = itemText
+			self.model.projectTree.products[productIndex].productName = itemText	
 
-	def switchProjectItem(self, modelData):
-		itemType = modelData.itemType
-		itemIndex = modelData.itemIndex
-		itemText = modelData.itemText
-		if(itemType is ElementType.PROJECT):
-			# TODO currentlly do noting
-			pass
-		elif(itemType is ElementType.PRODUCT):
-			productIndex = itemIndex[1]
-			selectedProduct = self.model.projectTree.products[productIndex]
-			topology = selectedProduct.topology
-			if(topology is None):
-				selectedProduct.addTopology()
+	def showProjectConfigGUI(self, parentGUI, product):
+		self.productController = ProductConfigController(product)
+		self.productController.showGUI(parentGUI)
 
-			self.topologyController = TopologyController(selectedProduct.topology)
-			self.topologyController.showTopology()
 	def duplicateProduct(self, data):
 		itemType = data.itemType
 		itemIndex = data.itemIndex

@@ -1,6 +1,6 @@
+from typing import List
+
 class Line:
-	def __init__(self, startX: float, stopX: float, startY: float, stopY: float):
-		self.startX = startX
-		self.stopX = stopX
-		self.startY = startY
-		self.stopY = stopY
+	def __init__(self, xPos:List[float], yPos: List[float]):
+		self.xPos = xPos 
+		self.yPos = yPos

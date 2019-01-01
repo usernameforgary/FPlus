@@ -3,9 +3,9 @@ from .DraggablePoint import DraggablePoint
 from .DraggableLine import DraggableLine
 
 class TopologyViewModel:
-	def __init__(self, points: List[DraggablePoint] = [], lines: List[DraggableLine] = []):
-		self.points:List[DraggablePoint] = points
-		self.lines:List[DraggableLine] = lines
+	def __init__(self, points: List[DraggablePoint] = None, lines: List[DraggableLine] = None):
+		self.points:List[DraggablePoint] = points if points is not None else []
+		self.lines:List[DraggableLine] = lines if lines is not None else []
 
 	def addLine(self, line: DraggableLine):
 		self.lines.append(line)

@@ -3,9 +3,9 @@ from .Point import Point
 from .Line import Line
 
 class Topology:
-	def __init__(self, points: List[Point] = [], lines: List[Line] = []):
-		self.points: List[Point] = points
-		self.Lines: List[Line] = lines
+	def __init__(self, points: List[Point] = None, lines: List[Line] = None):
+		self.points: List[Point] = points if points is not None else []
+		self.lines: List[Line] = lines if lines is not None else [] 
 
 	def addPoint(self, point: Point = None):
 		if point is None:

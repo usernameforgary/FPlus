@@ -1,23 +1,33 @@
 from pubsub import pub
 
 from models.Topology import Topology 
-from topics.Topics import ProjectViewTopics
-from topics.Topics import TopoloyViewTopics
+from topics.Topics import TopologyViewTopics
 
 from models.view_models.TopologyViewModel import TopologyViewModel
+from views.TopologyGUI import TopologyGUI
+
+from models.Point import Point
+from models.Line import Line
 
 class TopologyController:
 	def __init__(self, model: Topology = None):
-		self.topology = model
+		self.model = model 
 
-		pub.subscribe(self.editTopology, TopoloyViewTopics.GUI_EDIT_TOPOLOGY.value)
-
-	def showTopology(self):
-		pub.sendMessage(ProjectViewTopics.MODEL_SHOW_TOPOLOGY.value, topology = self.topology)
+		pub.subscribe(self.editTopology, TopologyViewTopics.GUI_EDIT_TOPOLOGY.value)
 
 	def editTopology(self, data):
-		print('...........View model recieved.....')
+		self.viewModelToModelReplace(data)
 
-
-
-			
+	def viewModelToModelReplace(self, viewModel: TopologyViewModel):
+		self.model.points = [] 
+		self.model.lines = []
+		for guiPoint in viewModel.points:
+			x0, y0 = guiPoint.center
+			pointType = guiPoint.pointType
+			modelPoint = Point(pointType, len(self.model.points), x0, y0)
+			self.model.points.append(modelPoint)
+		for guiLine in viewModel.lines:
+			xPos = guiLine.get_xdata()
+			yPos = guiLine.get_ydata()
+			modelLine = Line(xPos, yPos)
+			self.model.lines.append(modelLine)

@@ -8,13 +8,15 @@ from pubsub import pub
 from topics.Topics import ProjectViewTopics
 from enumObjs.EnumObjs import ElementType
 from models.view_models.TreeItem import TreeItem
-from models.ProjectTree import ProjectTree
+from models.ProjectViewModel import ProjectViewModel
 
 from .TopologyGUI import TopologyGUI
+from .ProductConfigGUI import ProductConfigGUI
 
 class ProjectViewGUI(wx.Frame):
-	def __init__( self, parent,  modelData: ProjectTree):
+	def __init__( self, parent,  modelData: ProjectViewModel):
 		super().__init__ (parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+		self.model = modelData
 
 		self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
 		#Font
@@ -48,6 +50,10 @@ class ProjectViewGUI(wx.Frame):
 		self.projectTreeCtrl = customtreectrl.CustomTreeCtrl( self, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize, 
 																													style=0, agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_EDIT_LABELS, validator=wx.DefaultValidator)
 
+		#show View with initial data
+		if modelData is not None:
+			self.initialView(modelData)
+
 		self.leftSizer.Add( self.projectTreeCtrl, 1, wx.ALL|wx.EXPAND, 0)
 
 		self.mainSizer.Add(self.leftSizer, 1, wx.ALL | wx.EXPAND, 0)
@@ -71,17 +77,13 @@ class ProjectViewGUI(wx.Frame):
 		pub.subscribe(self.modelNewProject, ProjectViewTopics.MODEL_NEW_PROJECT.value)
 		pub.subscribe(self.modelNewProduct, ProjectViewTopics.MODEL_NEW_PRODUCT.value)
 		# subscribe SHOW_TOPOLOGY topic from TopologyController
-		pub.subscribe(self.showProductConfig, ProjectViewTopics.MODEL_SHOW_TOPOLOGY.value)
-		pub.subscribe(self.refreshTreeContrl, ProjectViewTopics.MODEL_REFRESH_TREE_CONTRL.value)
+		pub.subscribe(self.refreshOrInitTreeContrl, ProjectViewTopics.MODEL_REFRESH_TREE_CONTRL.value)
+		pub.subscribe(self.addOrRefreshProjectConfig, ProjectViewTopics.GUI_ADD_REFRESH_PROJECT_CONFIG.value)	
 
-	def initialWithData(self, initialData: ProjectTree):
-		if initialData is not None:
-			projectName = initialData.projectName	
-			rootItemData = TreeItem(ElementType.PROJECT, [0], projectName)
-			self.projectTreeCtrl.AddRoot(projectName, data=rootItemData)
-			products = initialData.products
-			#for i in range(len(products)):
-
+	# show view with initial data
+	def initialView(self, initialData: ProjectViewModel):
+		if initialData.projectTree is not None:
+			self.refreshOrInitTreeContrl(initialData.projectTree)
 
 	def newProject(self, event):
 		rootItem = self.projectTreeCtrl.GetRootItem()
@@ -154,14 +156,13 @@ class ProjectViewGUI(wx.Frame):
 	def OnProjectTreeItemSelected(self, event):
 		item = event.GetItem()
 		itemPyData = self.projectTreeCtrl.GetPyData(item)
-		# public tree item selected topic, controller should subscibe this topic
-		pub.sendMessage(ProjectViewTopics.GUI_TREE_ITEM_SELECTED.value, modelData = itemPyData)
-
-	def showProductConfig(self, topology):
-		self.cleanRightSizer()	
-		topologyGUI = TopologyGUI(self, topology)
-		self.rightSizer.Add(topologyGUI, 1, wx.ALL|wx.EXPAND, 0)
-		self.rightSizer.Layout()
+		itemType = itemPyData.itemType
+		itemIndex = itemPyData.itemIndex
+		itemText = itemPyData.itemText
+		if (itemType is ElementType.PRODUCT):
+			productIndex = itemIndex[1]
+			product = self.model.projectTree.products[productIndex]
+			pub.sendMessage(ProjectViewTopics.GUI_SHOW_PROJECT_CONFIG.value, parentGUI=self, product = product)
 
 	def cleanRightSizer(self):
 		sizerItemList = self.rightSizer.GetChildren()
@@ -174,9 +175,12 @@ class ProjectViewGUI(wx.Frame):
 					raise Exception('No-window object in rightSizer')
 
 	# refresh tree control with new data(ProjectTree)
-	def refreshTreeContrl(self, data):
+	def refreshOrInitTreeContrl(self, data):
 		if data is not None:
-			self.projectTreeCtrl.DeleteAllItems()
+			if self.projectTreeCtrl is None:
+				self.projectTreeCtrl = customtreectrl.CustomTreeCtrl( self, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_EDIT_LABELS, validator=wx.DefaultValidator)	
+			else:
+				self.projectTreeCtrl.DeleteAllItems()
 			projectName = data.projectName	
 			rootItemData = TreeItem(ElementType.PROJECT, [0], projectName)
 			root = self.projectTreeCtrl.AddRoot(projectName, data=rootItemData)
@@ -184,4 +188,10 @@ class ProjectViewGUI(wx.Frame):
 			for product in data.products:
 				treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, i], product.productName)
 				self.projectTreeCtrl.AppendItem(root, product.productName, data = treeItemViewModel)
-				i += 1	
+				i += 1
+
+	# add or refresh ProjectConfigGUI in the righer sizer
+	def addOrRefreshProjectConfig(self, productConfigGUI):
+		self.cleanRightSizer()
+		self.rightSizer.Add(productConfigGUI, 1, wx.ALL|wx.EXPAND, 0)
+		self.rightSizer.Layout()	

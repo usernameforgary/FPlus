@@ -13,17 +13,18 @@ from models.view_models.DraggablePoint import DraggablePoint
 from models.view_models.TopologyViewModel import TopologyViewModel
 
 from topics.Topics import ProjectViewTopics
-from topics.Topics import TopoloyViewTopics
+from topics.Topics import TopologyViewTopics
 
 class TopologyGUI(wx.Panel):
 	topoloyFigure = plt.figure()
-	def __init__(self, parent, topology: Topology):
+	def __init__(self, parent, model: Topology):
 		super().__init__(parent)
 		self.parent = parent
+		self.model = model 
 		# draw type selected, default value is SELECT ELEMENT type	
 		self.drawTypeSelected: str = DrawElementType.SELECT.value
 		# stored all points(DraggablePoint)
-		self.viewModel = TopologyViewModel()
+		self.viewModel =  TopologyViewModel()
 		# start position of DarggableLine while drawing, type tuble
 		self.drawingLineStart = None
 		self.selectedDraggableLine = None
@@ -68,9 +69,11 @@ class TopologyGUI(wx.Panel):
 		#self.axes.get_xaxis().set_visible(False)
 		#self.axes.get_yaxis().set_visible(False)
 		self.canvas = FigureCanvas(self, -1, self.figure)
-
 		# figure canvas connect
 		self.connect()
+
+		# initial gui and viewModel with points and lines in model data
+		self.initialViewAndViewModel()
 
 		topologySizer.Add(typeBoxSizer, 1, wx.ALL|wx.EXPAND, 0)
 		topologySizer.Add(self.canvas, 6, wx.ALL | wx.EXPAND, 0)
@@ -260,10 +263,46 @@ class TopologyGUI(wx.Panel):
 					self.viewModel.addPoint(element)
 				else:
 					self.viewModel.removePoint(element)
-				pub.sendMessage(TopoloyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)
+				pub.sendMessage(TopologyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)
 			elif lists is self.viewModel.lines:
 				if isAdd:
 					self.viewModel.addLine(element)
 				else:
 					self.viewModel.removeLine(element)
-				pub.sendMessage(TopoloyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)
+				pub.sendMessage(TopologyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)
+
+	def initialViewAndViewModel(self):
+		for modelPoint in self.model.points:
+			guiPositionX = modelPoint.guiPositionX
+			guiPositionY = modelPoint.guiPositionY
+			pointType = modelPoint.pointType
+			guiPoint = None
+			if pointType == PointType.CAVITY.value:
+				guiPoint = DraggablePoint(self, (guiPositionX, guiPositionY), 2.5, facecolor='black', edgecolor="black", alpha=None, pointType=PointType.CAVITY.value)
+			elif pointType == PointType.COUPLING.value:
+				guiPoint = DraggablePoint(self, (guiPositionX, guiPositionY), 1.5, facecolor='black', edgecolor="black", alpha=None, pointType=PointType.COUPLING.value)
+			elif pointType == PointType.PORT.value:
+				guiPoint = DraggablePoint(self, (guiPositionX, guiPositionY), 2.5, facecolor='none', edgecolor="black", alpha=None, pointType=PointType.PORT.value)
+			if guiPoint is not None:
+				self.axes.add_patch(guiPoint)
+				guiPoint.connect()
+				self.viewModel.points.append(guiPoint)
+		if self.model.lines is not None:
+			for modelLine in self.model.lines:
+				xPos = modelLine.xPos
+				yPos = modelLine.yPos
+				guiLine = DraggableLine(self, xPos, yPos)
+				for point in self.viewModel.points:
+					lineStartX = xPos[0]
+					lineStopX = xPos[1]
+					lineStartY = yPos[0]
+					lineStopY = yPos[1]
+					x0, y0 = point.center
+					if lineStartX == x0 and lineStartY == y0:
+						guiLine.points.append(point)
+						point.fromMeLines.append(guiLine)
+					elif lineStopX == x0 and lineStopY == y0:
+						guiLine.points.append(point)
+						point.toMeLines.append(guiLine)
+				self.viewModel.lines.append(guiLine)
+				self.axes.add_line(guiLine)

@@ -13,11 +13,13 @@ class ProjectViewTopics(Enum):
 	GUI_DUPLICATE_TUNNING_PAHSE = 'GUI_Duplicate_Tuning_PHASE'
 	GUI_TREE_ITEM_RENAME = 'GUI_Tree_Item_Rename'
 	GUI_TREE_ITEM_SELECTED = 'GUI_Tree_Item_Selected'
-	GUI_SHOW_TOPOLOGY = 'GUI_Show_Topology'
-	MODEL_SHOW_TOPOLOGY = 'MODEL_Show_Topology'
 	MODEL_REFRESH_TREE_CONTRL = 'MODEL_Resfresh_Tree_Contrl'
 	GUI_DUPLICATE_PRODUCT = 'GUI_Duplicate_Product'	
-
+	GUI_SHOW_PROJECT_CONFIG = 'GUI_Show_Project_Config'
+	GUI_ADD_REFRESH_PROJECT_CONFIG = 'GUI_Add_Refresh_Project_Config'
+	GUI_SHOW_TOPOLOGY = 'GUI_Show_Topology'
+	
 @unique
-class TopoloyViewTopics(Enum):
+class TopologyViewTopics(Enum):
+	GUI_ADD_REFRESH_TOPOLOGY = 'GUI_Add_Refresh_Toplogy'
 	GUI_EDIT_TOPOLOGY = 'GUI_Edit_Topology'	

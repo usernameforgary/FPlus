@@ -1,18 +1,14 @@
 from typing import List
-from enumObjs.EnumObjs import PointType
-
 from .Line import Line
 
 class Point:
-	def __init__(self, pointType: str, pointIndex: int, guiPositionX: float, guiPositionY: float, pointLabel: str = '',fromMeLines: List[Line] = [], toMeLines:List[Line] = []):
-		self.pointType: str = None
-		self.pointLabel: str = ""
-		self.pointIndex: int = None
+	def __init__(self, pointType: str, pointIndex: int, guiPositionX: float, guiPositionY: float, pointLabel: str = ''):
+		self.pointType: str = pointType
+		self.pointLabel: str = pointLabel 
+		self.pointIndex: int = pointIndex 
 
-		self.guiPositionX: float = None
-		self.guiPositionY: float = None
-		self.fromMeLines: List[Line] = []
-		self.toMeLines: List[Line] = []
+		self.guiPositionX: float = guiPositionX 
+		self.guiPositionY: float = guiPositionY
 
 	def setGUIPosition(self, positionX: float, positionY: float):
 		self.guiPositionX = positionX
