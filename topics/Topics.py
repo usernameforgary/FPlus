@@ -23,3 +23,7 @@ class ProjectViewTopics(Enum):
 class TopologyViewTopics(Enum):
 	GUI_ADD_REFRESH_TOPOLOGY = 'GUI_Add_Refresh_Toplogy'
 	GUI_EDIT_TOPOLOGY = 'GUI_Edit_Topology'	
+
+@unique
+class ProductConfigTopics(Enum):
+	GUI_CREATE_PRODUCT_TUNING_PHASE = 'GUI_Create_Product_Tuning_Phase'

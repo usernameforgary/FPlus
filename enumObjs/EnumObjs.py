@@ -19,3 +19,15 @@ class DrawElementType(Enum):
 	COUPLING = 'Draw COUPLING'
 	LINE = 'Draw LINE'
 	PORT = 'Draw PORT'
+
+@unique
+class SParameterType(Enum):
+	S11 = 'S11'
+	S22 = 'S22'
+	S21 = 'S21'
+	S12 = 'S12'
+	
+@unique
+class SweepType(Enum):
+	LINEAR = 'Linear',
+	SEGMENT = 'Segment'

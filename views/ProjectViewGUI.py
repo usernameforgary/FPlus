@@ -6,12 +6,15 @@ import wx.lib.agw.customtreectrl as customtreectrl
 from pubsub import pub
 
 from topics.Topics import ProjectViewTopics
+from topics.Topics import ProductConfigTopics
 from enumObjs.EnumObjs import ElementType
 from models.view_models.TreeItem import TreeItem
 from models.ProjectViewModel import ProjectViewModel
+from models.TuningPhase import TuningPhase
 
 from .TopologyGUI import TopologyGUI
 from .ProductConfigGUI import ProductConfigGUI
+from .ListCtrlNonVirtual import ListCtrlNonVirtual
 
 class ProjectViewGUI(wx.Frame):
 	def __init__( self, parent,  modelData: ProjectViewModel):
@@ -79,6 +82,7 @@ class ProjectViewGUI(wx.Frame):
 		# subscribe SHOW_TOPOLOGY topic from TopologyController
 		pub.subscribe(self.refreshOrInitTreeContrl, ProjectViewTopics.MODEL_REFRESH_TREE_CONTRL.value)
 		pub.subscribe(self.addOrRefreshProjectConfig, ProjectViewTopics.GUI_ADD_REFRESH_PROJECT_CONFIG.value)	
+		pub.subscribe(self.createTuningPhase, ProductConfigTopics.GUI_CREATE_PRODUCT_TUNING_PHASE.value)
 
 	# show view with initial data
 	def initialView(self, initialData: ProjectViewModel):
@@ -163,6 +167,8 @@ class ProjectViewGUI(wx.Frame):
 			productIndex = itemIndex[1]
 			product = self.model.projectTree.products[productIndex]
 			pub.sendMessage(ProjectViewTopics.GUI_SHOW_PROJECT_CONFIG.value, parentGUI=self, product = product)
+		elif itemType is ElementType.PROJECT:
+			self.showTuningPhaseList()	
 
 	def cleanRightSizer(self):
 		sizerItemList = self.rightSizer.GetChildren()
@@ -195,3 +201,28 @@ class ProjectViewGUI(wx.Frame):
 		self.cleanRightSizer()
 		self.rightSizer.Add(productConfigGUI, 1, wx.ALL|wx.EXPAND, 0)
 		self.rightSizer.Layout()	
+
+	def replaceRightSizer(self, replaceGUI):
+		self.cleanRightSizer()
+		self.rightSizer.Add(replaceGUI, 1, wx.ALL|wx.EXPAND, 0)
+		self.rightSizer.Layout()	
+
+	def showTuningPhaseList(self):
+		tID = wx.NewIdRef()
+		tuningPhaseList = ListCtrlNonVirtual(self, tID, style=wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES)
+		tuningPhaseList.InsertColumn(0, "No.")
+		tuningPhaseList.InsertColumn(1, "Product")
+		tuningPhaseList.InsertColumn(2, "Tuning Phase")
+		tuningPhaseList.InsertColumn(3, "Sample collection")
+		self.replaceRightSizer(tuningPhaseList)
+
+	def createTuningPhase(self):
+		item = self.projectTreeCtrl.GetSelection()
+		itemPyData = self.projectTreeCtrl.GetPyData(item)
+		if itemPyData.itemType is ElementType.PRODUCT:
+			producIndex = itemPyData.itemIndex
+			modelProduct = self.model.projectTree.products[producIndex[1]]
+			modelProductTopology = modelProduct.topology
+			modelProductVnaConfig = modelProduct.vnaConfig
+			tuningPhase = TuningPhase()
+			print('product index is: {0}'.format(producIndex))

@@ -7,6 +7,8 @@ from topics.Topics import ProjectViewTopics
 from topics.Topics import TopologyViewTopics
 
 from .TopologyGUI import TopologyGUI
+from .PointListGUI import PointListGUI
+from .ProductConfigAction import ProductConfigAction
 
 class ProductConfigGUI(wx.Panel):
 	def __init__(self, parent, model: Product):
@@ -16,9 +18,15 @@ class ProductConfigGUI(wx.Panel):
 
 		self.mainSizer = wx.BoxSizer(wx.VERTICAL)
 		self.topologySizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.pointListAndActionSizer = wx.BoxSizer(wx.HORIZONTAL)	
+		self.pointListSizer = wx.BoxSizer(wx.HORIZONTAL)
+		self.actionSizer = wx.BoxSizer(wx.HORIZONTAL)
+
 		self.mainSizer.Add(self.topologySizer, 1, wx.ALL|wx.EXPAND, 0)
-		self.otherSizer = wx.BoxSizer(wx.HORIZONTAL)	
-		self.mainSizer.Add(self.otherSizer, 1, wx.ALL|wx.EXPAND, 0)		
+		self.mainSizer.Add(self.pointListAndActionSizer, 1, wx.ALL|wx.EXPAND, 0)	
+
+		self.pointListAndActionSizer.Add(self.pointListSizer, 1, wx.ALL|wx.EXPAND, 0)
+		self.pointListAndActionSizer.Add(self.actionSizer, 1, wx.ALL|wx.EXPAND, 0)
 
 		self.initialView()	
 		self.SetSizer(self.mainSizer)
@@ -31,6 +39,10 @@ class ProductConfigGUI(wx.Panel):
 			self.model.topology = Topology()
 		topologyGUI = TopologyGUI(self, self.model.topology)
 		self.topologySizer.Add(topologyGUI, 1, wx.ALL|wx.EXPAND, 0)
+		pointListGUI = PointListGUI(self, self.model.topology)
+		self.pointListSizer.Add(pointListGUI, 1, wx.ALL|wx.EXPAND, 0)
+		productConfigActionGUI = ProductConfigAction(self, self.model)
+		self.actionSizer.Add(productConfigActionGUI, 1, wx.ALL|wx.EXPAND, 0)
 
 	def addRefreshTopologyGUI(self, topologyGUI):
 		self.cleanToplogySizer()

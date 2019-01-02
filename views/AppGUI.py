@@ -11,7 +11,7 @@ class AppGUI(wx.Frame):
 		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"FPlus", pos = wx.DefaultPosition, size = wx.Size( 970,689 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
 
 		self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
-
+		
 		self.menuBar = wx.MenuBar( 0 )
 		self.fileMenu = wx.Menu()
 		self.newMenuItem = wx.MenuItem( self.fileMenu, wx.ID_ANY, u"New", wx.EmptyString, wx.ITEM_NORMAL )
