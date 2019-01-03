@@ -263,13 +263,13 @@ class TopologyGUI(wx.Panel):
 					self.viewModel.addPoint(element)
 				else:
 					self.viewModel.removePoint(element)
-				pub.sendMessage(TopologyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)
+				pub.sendMessage(TopologyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel, model = self.model)
 			elif lists is self.viewModel.lines:
 				if isAdd:
 					self.viewModel.addLine(element)
 				else:
 					self.viewModel.removeLine(element)
-				pub.sendMessage(TopologyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel)
+				pub.sendMessage(TopologyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel, model = self.model)
 
 	def initialViewAndViewModel(self):
 		for modelPoint in self.model.points:

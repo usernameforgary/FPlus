@@ -10,11 +10,14 @@ from .TopologyGUI import TopologyGUI
 from .PointListGUI import PointListGUI
 from .ProductConfigAction import ProductConfigAction
 
+from controllers.TopologyController import TopologyController
+
 class ProductConfigGUI(wx.Panel):
 	def __init__(self, parent, model: Product):
 		super().__init__(parent)
 		self.parent = parent
 		self.model = model
+		self.topologyController = None
 
 		self.mainSizer = wx.BoxSizer(wx.VERTICAL)
 		self.topologySizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -34,10 +37,8 @@ class ProductConfigGUI(wx.Panel):
 		pub.subscribe(self.addRefreshTopologyGUI, TopologyViewTopics.GUI_ADD_REFRESH_TOPOLOGY.value)
 
 	def initialView(self):
-		# Add topology gui
-		if self.model.topology is None:
-			self.model.topology = Topology()
-		topologyGUI = TopologyGUI(self, self.model.topology)
+		self.topologyController = TopologyController(self.model.topology)
+		topologyGUI = self.topologyController.initialView(self)
 		self.topologySizer.Add(topologyGUI, 1, wx.ALL|wx.EXPAND, 0)
 		pointListGUI = PointListGUI(self, self.model.topology)
 		self.pointListSizer.Add(pointListGUI, 1, wx.ALL|wx.EXPAND, 0)

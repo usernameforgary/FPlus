@@ -22,8 +22,7 @@ class ProjectViewController:
 		pub.subscribe(self.newProduct, ProjectViewTopics.GUI_NEW_PRDUCT.value)
 		pub.subscribe(self.editProjectOrProductName, ProjectViewTopics.GUI_TREE_ITEM_RENAME.value)
 		pub.subscribe(self.duplicateProduct, ProjectViewTopics.GUI_DUPLICATE_PRODUCT.value)
-		pub.subscribe(self.showProjectConfigGUI, ProjectViewTopics.GUI_SHOW_PROJECT_CONFIG.value)
-
+					
 	def showProjectView(self):
 		self.gui.Show()
 
@@ -45,11 +44,7 @@ class ProjectViewController:
 			self.model.projectTree.projectName = itemText
 		elif(itemType is ElementType.PRODUCT):
 			productIndex = itemIndex[1]
-			self.model.projectTree.products[productIndex].productName = itemText	
-
-	def showProjectConfigGUI(self, parentGUI, product):
-		self.productController = ProductConfigController(product)
-		self.productController.showGUI(parentGUI)
+			self.model.projectTree.products[productIndex].productName = itemText
 
 	def duplicateProduct(self, data):
 		itemType = data.itemType

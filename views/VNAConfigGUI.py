@@ -95,8 +95,8 @@ class VNAConfigGUI(wx.Frame):
 				sweepTable = SweepTable(startFreq, stopFreq, pointsNum, IFBW, power)
 				self.model.sweepTables.append(sweepTable)
 
-		if len(self.model.sweepTables) == 0:
-			wx.MessageBox("Please input sweep table")
-			event.Veto()
-			return
+		# if len(self.model.sweepTables) == 0:
+		# 	wx.MessageBox("Please input sweep table")
+		# 	event.Veto()
+		# 	return
 		self.Destroy()

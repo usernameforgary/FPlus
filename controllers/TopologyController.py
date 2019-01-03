@@ -10,13 +10,18 @@ from models.Point import Point
 from models.Line import Line
 
 class TopologyController:
-	def __init__(self, model: Topology = None):
+	def __init__(self, model: Topology):
 		self.model = model 
 
 		pub.subscribe(self.editTopology, TopologyViewTopics.GUI_EDIT_TOPOLOGY.value)
 
-	def editTopology(self, data):
-		self.viewModelToModelReplace(data)
+	def initialView(self, parentGUI):
+		return TopologyGUI(parentGUI, self.model)
+
+	def editTopology(self, data, model):
+		# TODO
+		if model is self.model:
+			self.viewModelToModelReplace(data)
 
 	def viewModelToModelReplace(self, viewModel: TopologyViewModel):
 		self.model.points = [] 

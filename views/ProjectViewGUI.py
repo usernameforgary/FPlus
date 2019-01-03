@@ -1,24 +1,26 @@
+import sys
 import wx
 import wx.dataview
 import wx.grid
 import wx.lib.agw.customtreectrl as customtreectrl
-
+import wx.lib.agw.ultimatelistctrl as ULC
 from pubsub import pub
-
 from topics.Topics import ProjectViewTopics
-from topics.Topics import ProductConfigTopics
 from enumObjs.EnumObjs import ElementType
 from models.view_models.TreeItem import TreeItem
 from models.ProjectViewModel import ProjectViewModel
 from models.TuningPhase import TuningPhase
-
-from .TopologyGUI import TopologyGUI
+from .AnalyzerConfigGUI import AnalyzerConfigGUI
 from .ProductConfigGUI import ProductConfigGUI
 from .ListCtrlNonVirtual import ListCtrlNonVirtual
+from .SampleCollectionGUI import SampleCollectionGUI
+from controllers.TuningPhaseConfigController import TuningPhaseConfigController
+from controllers.ProductConfigController import ProductConfigController
+from utils.JsonConvert import JsonConvert
 
 class ProjectViewGUI(wx.Frame):
 	def __init__( self, parent,  modelData: ProjectViewModel):
-		super().__init__ (parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size( 600,400 ), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+		super().__init__ (parent, id = wx.ID_ANY, title = u"Project Viewer", size = wx.Size(1000, 700), pos = wx.DefaultPosition, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
 		self.model = modelData
 
 		self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
@@ -39,6 +41,10 @@ class ProjectViewGUI(wx.Frame):
 		self.addProductMenuItem = wx.MenuItem( self.projectViewProductMenu, wx.ID_ANY, u"Add Product", wx.EmptyString, wx.ITEM_NORMAL )
 		self.projectViewProductMenu.Append( self.addProductMenuItem )
 		self.viewProjectMenubar.Append( self.projectViewProductMenu, u"Product" )
+		self.vnaConfigMenu = wx.Menu()
+		self.vnaConfigMenuItem = wx.MenuItem( self.vnaConfigMenu, wx.ID_ANY, u"Analyzer Configuration", wx.EmptyString, wx.ITEM_NORMAL )
+		self.vnaConfigMenu.Append( self.vnaConfigMenuItem )
+		self.viewProjectMenubar.Append( self.vnaConfigMenu, u"Analyzer" )
 
 		self.SetMenuBar(self.viewProjectMenubar )
 
@@ -69,7 +75,9 @@ class ProjectViewGUI(wx.Frame):
 		self.Centre()
 
 		# connect event
-		self.Bind(wx.EVT_TOOL, self.newProject ,self.newProjectMenuItem)
+		self.Bind(wx.EVT_CLOSE, self.onClose)
+		self.Bind(wx.EVT_TOOL, self.newProject, self.newProjectMenuItem)
+		self.Bind(wx.EVT_TOOL, self.vnaConifg, self.vnaConfigMenuItem)
 		self.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.OnProjectTreeLabelBeginEdit, self.projectTreeCtrl)
 		self.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnProjectTreeLabelEndEdit, self.projectTreeCtrl)
 		self.Bind(wx.EVT_TREE_SEL_CHANGED, self.OnProjectTreeItemSelected, self.projectTreeCtrl)
@@ -82,12 +90,17 @@ class ProjectViewGUI(wx.Frame):
 		# subscribe SHOW_TOPOLOGY topic from TopologyController
 		pub.subscribe(self.refreshOrInitTreeContrl, ProjectViewTopics.MODEL_REFRESH_TREE_CONTRL.value)
 		pub.subscribe(self.addOrRefreshProjectConfig, ProjectViewTopics.GUI_ADD_REFRESH_PROJECT_CONFIG.value)	
-		pub.subscribe(self.createTuningPhase, ProductConfigTopics.GUI_CREATE_PRODUCT_TUNING_PHASE.value)
 
 	# show view with initial data
 	def initialView(self, initialData: ProjectViewModel):
 		if initialData.projectTree is not None:
 			self.refreshOrInitTreeContrl(initialData.projectTree)
+
+	def onClose(self, event):
+		print('{0}'.format(JsonConvert.ToJSON(self.model)))
+		#event.Veto()
+		#return
+		self.Destroy()
 
 	def newProject(self, event):
 		rootItem = self.projectTreeCtrl.GetRootItem()
@@ -166,9 +179,18 @@ class ProjectViewGUI(wx.Frame):
 		if (itemType is ElementType.PRODUCT):
 			productIndex = itemIndex[1]
 			product = self.model.projectTree.products[productIndex]
-			pub.sendMessage(ProjectViewTopics.GUI_SHOW_PROJECT_CONFIG.value, parentGUI=self, product = product)
+			self.productConfigController = ProductConfigController(product)
+			productConfigGUI = self.productConfigController.initalView(self)
+			self.replaceRightSizer(productConfigGUI)
 		elif itemType is ElementType.PROJECT:
 			self.showTuningPhaseList()	
+		elif itemType is ElementType.TUNING_PHASE:
+			productIndex = itemIndex[1]
+			tuningPhaseIndex = itemIndex[2]
+			tuningPhase = self.model.projectTree.products[productIndex].tuningPhases[tuningPhaseIndex]
+			self.tuningPhaseController = TuningPhaseConfigController(tuningPhase)		
+			tuningPhaseGUI = self.tuningPhaseController.initialView(self)
+			self.replaceRightSizer(tuningPhaseGUI)
 
 	def cleanRightSizer(self):
 		sizerItemList = self.rightSizer.GetChildren()
@@ -182,19 +204,25 @@ class ProjectViewGUI(wx.Frame):
 
 	# refresh tree control with new data(ProjectTree)
 	def refreshOrInitTreeContrl(self, data):
-		if data is not None:
-			if self.projectTreeCtrl is None:
-				self.projectTreeCtrl = customtreectrl.CustomTreeCtrl( self, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_EDIT_LABELS, validator=wx.DefaultValidator)	
-			else:
-				self.projectTreeCtrl.DeleteAllItems()
-			projectName = data.projectName	
-			rootItemData = TreeItem(ElementType.PROJECT, [0], projectName)
-			root = self.projectTreeCtrl.AddRoot(projectName, data=rootItemData)
-			i = 0
-			for product in data.products:
-				treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, i], product.productName)
-				self.projectTreeCtrl.AppendItem(root, product.productName, data = treeItemViewModel)
-				i += 1
+		if data is None:
+			data = self.model.projectTree
+		if self.projectTreeCtrl is None:
+			self.projectTreeCtrl = customtreectrl.CustomTreeCtrl( self, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_EDIT_LABELS, validator=wx.DefaultValidator)	
+		else:
+			self.projectTreeCtrl.DeleteAllItems()
+		projectName = data.projectName	
+		rootItemData = TreeItem(ElementType.PROJECT, [0], projectName)
+		root = self.projectTreeCtrl.AddRoot(projectName, data=rootItemData)
+		i = 0
+		for product in data.products:
+			treeItemViewModel = TreeItem(ElementType.PRODUCT, [0, i], product.productName)
+			productTreeItem	= self.projectTreeCtrl.AppendItem(root, product.productName, data = treeItemViewModel)
+			j = 0
+			for tuningPhase in product.tuningPhases:
+				topologyItemViewModel = TreeItem(ElementType.TUNING_PHASE, [0, i, j], tuningPhase.tuningPhaseName)
+				self.projectTreeCtrl.AppendItem(productTreeItem, tuningPhase.tuningPhaseName, data = topologyItemViewModel)
+				j += 1
+			i += 1
 
 	# add or refresh ProjectConfigGUI in the righer sizer
 	def addOrRefreshProjectConfig(self, productConfigGUI):
@@ -208,21 +236,28 @@ class ProjectViewGUI(wx.Frame):
 		self.rightSizer.Layout()	
 
 	def showTuningPhaseList(self):
-		tID = wx.NewIdRef()
-		tuningPhaseList = ListCtrlNonVirtual(self, tID, style=wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES)
-		tuningPhaseList.InsertColumn(0, "No.")
-		tuningPhaseList.InsertColumn(1, "Product")
-		tuningPhaseList.InsertColumn(2, "Tuning Phase")
-		tuningPhaseList.InsertColumn(3, "Sample collection")
-		self.replaceRightSizer(tuningPhaseList)
+		#self.tuningPhaseList = ListCtrlNonVirtual(self, tID, style=wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES)
+		self.tuningPhaseList = ULC.UltimateListCtrl(self, wx.ID_ANY, agwStyle = wx.LC_REPORT
+                                         | wx.LC_VRULES
+                                         | wx.LC_HRULES
+                                         | ULC.ULC_HAS_VARIABLE_ROW_HEIGHT)
+		self.tuningPhaseList.InsertColumn(0, "Product")
+		self.tuningPhaseList.InsertColumn(1, "Tuning Phase")
+		self.tuningPhaseList.InsertColumn(2, "Sample collection")
+		for product in self.model.projectTree.products:
+			for tuningPhase in product.tuningPhases:
+				index = self.tuningPhaseList.InsertStringItem(sys.maxsize, product.productName)
+				self.tuningPhaseList.SetStringItem(index, 1, tuningPhase.tuningPhaseName)
+				btn = wx.Button(self.tuningPhaseList, -1, "Collect")
+				self.Bind(wx.EVT_BUTTON, lambda evt, tuningPhase=tuningPhase: self.onCollectBtnClick(evt, tuningPhase), btn)
+				self.tuningPhaseList.SetItemWindow(index, 2, btn)
+			
+		self.replaceRightSizer(self.tuningPhaseList)
 
-	def createTuningPhase(self):
-		item = self.projectTreeCtrl.GetSelection()
-		itemPyData = self.projectTreeCtrl.GetPyData(item)
-		if itemPyData.itemType is ElementType.PRODUCT:
-			producIndex = itemPyData.itemIndex
-			modelProduct = self.model.projectTree.products[producIndex[1]]
-			modelProductTopology = modelProduct.topology
-			modelProductVnaConfig = modelProduct.vnaConfig
-			tuningPhase = TuningPhase()
-			print('product index is: {0}'.format(producIndex))
+	def onCollectBtnClick(self, evt, tuningPhase):
+		sampleCollectionGUI = SampleCollectionGUI(tuningPhase)	
+		sampleCollectionGUI.Show()
+
+	def vnaConifg(self, evt):
+		anlyzerConfigWindow = AnalyzerConfigGUI(self.model)
+		anlyzerConfigWindow.Show()
