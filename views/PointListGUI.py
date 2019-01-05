@@ -19,9 +19,8 @@ class PointListGUI(wx.Panel):
 		self.listSizer.Add(self.list, 1, wx.ALL|wx.EXPAND, 0)
 
 		self.initalData()
-
+		
 		self.SetSizer(self.mainSizer)
-
 	def initalData(self):
 		self.list.InsertColumn(0, "No.")
 		self.list.InsertColumn(1, "Point Type")

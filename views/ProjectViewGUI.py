@@ -255,9 +255,9 @@ class ProjectViewGUI(wx.Frame):
 		self.replaceRightSizer(self.tuningPhaseList)
 
 	def onCollectBtnClick(self, evt, tuningPhase):
-		sampleCollectionGUI = SampleCollectionGUI(tuningPhase)	
+		sampleCollectionGUI = SampleCollectionGUI(tuningPhase)
 		sampleCollectionGUI.Show()
-
+		
 	def vnaConifg(self, evt):
 		anlyzerConfigWindow = AnalyzerConfigGUI(self.model)
 		anlyzerConfigWindow.Show()

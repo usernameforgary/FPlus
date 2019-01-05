@@ -65,7 +65,7 @@ class TopologyGUI(wx.Panel):
 		self.axes = self.figure.add_axes([0., 0., 1., 1.])
 		self.axes.set_xlim([0, 120])
 		self.axes.set_ylim([0, 80])
-		self.axes.set_aspect('equal')
+		self.axes.set_aspect(aspect='auto')
 		#self.axes.get_xaxis().set_visible(False)
 		#self.axes.get_yaxis().set_visible(False)
 		self.canvas = FigureCanvas(self, -1, self.figure)

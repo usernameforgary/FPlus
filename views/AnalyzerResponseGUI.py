@@ -24,6 +24,7 @@ class AnalyzerResponseGUI(wx.Panel):
 		x = []
 		y = []
 		self.axes.plot(x,y)
+		self.figure.subplots_adjust(hspace=0, wspace=0, left=0, bottom=0, right=1, top=1)
 		self.canvas = FigureCanvas(self, -1, self.figure)
 		self.toolbar = NavigationToolbar(self.canvas)
 		self.toolbar.Realize()
