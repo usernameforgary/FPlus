@@ -31,6 +31,10 @@ class PointListGUI(wx.Panel):
 				index = self.list.InsertItem(self.list.GetItemCount(), point.pointIndex)
 				self.list.SetItem(index, 0, str(point.pointIndex))
 				self.list.SetItem(index, 1, str(point.pointType))
+		itemCount = self.list.GetItemCount()
+		if itemCount > 0:
+			self.list.Focus(itemCount-1)
+			self.list.Select(itemCount-1)
 		# items = listctrldata.items()
 		# for key, data in items:
 		# 	index = self.list.InsertItem(self.list.GetItemCount(), data[0])

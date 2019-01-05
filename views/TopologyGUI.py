@@ -17,12 +17,12 @@ from topics.Topics import TopologyViewTopics
 
 class TopologyGUI(wx.Panel):
 	topoloyFigure = plt.figure()
-	def __init__(self, parent, model: Topology):
+	def __init__(self, parent, model: Topology, showDrawnType = True):
 		super().__init__(parent)
 		self.parent = parent
 		self.model = model 
 		# draw type selected, default value is SELECT ELEMENT type	
-		self.drawTypeSelected: str = DrawElementType.SELECT.value
+		self.drawTypeSelected: str = ''
 		# stored all points(DraggablePoint)
 		self.viewModel =  TopologyViewModel()
 		# start position of DarggableLine while drawing, type tuble
@@ -75,8 +75,11 @@ class TopologyGUI(wx.Panel):
 		# initial gui and viewModel with points and lines in model data
 		self.initialViewAndViewModel()
 
-		topologySizer.Add(typeBoxSizer, 1, wx.ALL|wx.EXPAND, 0)
-		topologySizer.Add(self.canvas, 6, wx.ALL | wx.EXPAND, 0)
+		if showDrawnType:
+			topologySizer.Add(typeBoxSizer, 1, wx.ALL|wx.EXPAND, 0)
+			topologySizer.Add(self.canvas, 6, wx.ALL | wx.EXPAND, 0)
+		else:
+			topologySizer.Add(self.canvas, 1, wx.ALL | wx.EXPAND, 0)
 
 		sizer.Add(topologySizer, 1, wx.ALL|wx.EXPAND, 0)
 
@@ -197,7 +200,7 @@ class TopologyGUI(wx.Panel):
 				# ADD new Point
 				if event.dblclick:
 					if self.drawTypeSelected is None or self.drawTypeSelected is '':
-						self.parent.projectViewStatusBar.SetStatusText("Please select 'Draw Type' first, than double click to draw.")
+						# do nothing
 						return	
 					circle = None
 					if self.drawTypeSelected == DrawElementType.CAVITY.value:
@@ -272,6 +275,8 @@ class TopologyGUI(wx.Panel):
 				pub.sendMessage(TopologyViewTopics.GUI_EDIT_TOPOLOGY.value, data = self.viewModel, model = self.model)
 
 	def initialViewAndViewModel(self):
+		# index of latest point, not PORT type Point
+		latestNonPortPointIndex = -1
 		for modelPoint in self.model.points:
 			guiPositionX = modelPoint.guiPositionX
 			guiPositionY = modelPoint.guiPositionY
@@ -279,14 +284,19 @@ class TopologyGUI(wx.Panel):
 			guiPoint = None
 			if pointType == PointType.CAVITY.value:
 				guiPoint = DraggablePoint(self, (guiPositionX, guiPositionY), 2.5, facecolor='black', edgecolor="black", alpha=None, pointType=PointType.CAVITY.value)
+				latestNonPortPointIndex += 1
 			elif pointType == PointType.COUPLING.value:
 				guiPoint = DraggablePoint(self, (guiPositionX, guiPositionY), 1.5, facecolor='black', edgecolor="black", alpha=None, pointType=PointType.COUPLING.value)
+				latestNonPortPointIndex += 1
 			elif pointType == PointType.PORT.value:
 				guiPoint = DraggablePoint(self, (guiPositionX, guiPositionY), 2.5, facecolor='none', edgecolor="black", alpha=None, pointType=PointType.PORT.value)
 			if guiPoint is not None:
 				self.axes.add_patch(guiPoint)
 				guiPoint.connect()
 				self.viewModel.points.append(guiPoint)
+		if latestNonPortPointIndex != -1:
+			latestPoint = self.viewModel.points[latestNonPortPointIndex]
+			latestPoint.set_edgecolor('red')
 		if self.model.lines is not None:
 			for modelLine in self.model.lines:
 				xPos = modelLine.xPos

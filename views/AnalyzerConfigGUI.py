@@ -35,12 +35,14 @@ class AnalyzerConfigGUI(wx.Frame):
 	def checkConnection(self, event):
 		address = self.addressTextCtrl.GetValue().strip() if self.addressTextCtrl.GetValue() is not None else ''
 		if address is not None and address is not '':
-			analyzerCommunication = AnalyzerCommunication.getInstance()
-			result = analyzerCommunication.checkAnalyzerConnection(address)
+			analyzerCommunication = AnalyzerCommunication.getInstance(address)
+			analyzerCommunication.openConnection()
+			result = analyzerCommunication.checkAnalyzerConnection()
 			if result != "OK":
 				wx.MessageBox('Connection Error: {0}'.format(result), 'Error', wx.OK|wx.ICON_ERROR)
 			else:
 				wx.MessageBox('Connect Successfully!', 'Success', wx.OK | wx.ICON_INFORMATION)
+			analyzerCommunication.closeConnection()
 		else:
 			wx.MessageBox('Please input analyzer address', 'Message', wx.OK)
 
