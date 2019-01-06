@@ -16,6 +16,7 @@ class SampleCollectionGUI(wx.Frame):
 		self.pointListCtrl = None
 		# point currently selected
 		self.selectedPointIndex = -1
+		self.currentStepPostion = 0
 
 		self.readDataTimer = wx.Timer(self)
 		self.analyzerCommunication = None
@@ -28,6 +29,7 @@ class SampleCollectionGUI(wx.Frame):
 		self.nextPointBtn = wx.Button(self, wx.ID_ANY, 'Next')
 		self.upBtn = wx.Button(self, wx.ID_ANY, 'Up')
 		self.downBtn = wx.Button(self, wx.ID_ANY, 'Down')
+		self.slider = wx.Slider(self, wx.ID_ANY, 0, -10, 10, style=wx.SL_VERTICAL|wx.SL_LABELS|wx.SL_INVERSE)
 		self.stopBtn = wx.Button(self, wx.ID_ANY, 'Stop Read')
 	
 		self.initalData()
@@ -44,15 +46,18 @@ class SampleCollectionGUI(wx.Frame):
 		self.Bind(wx.EVT_TIMER, self.MockreadAnalyzerData)
 		self.Bind(wx.EVT_BUTTON, self.startReadData, self.startBtn)
 		self.Bind(wx.EVT_BUTTON, self.toNextPoint, self.nextPointBtn)
+		self.Bind(wx.EVT_BUTTON, self.upCollect, self.upBtn)
+		self.Bind(wx.EVT_BUTTON, self.downCollect, self.downBtn)
 		#self.Bind(wx.EVT_BUTTON, self.stopReadData, self.stopBtn)
 		#self.Bind(wx.EVT_TIMER, self.readAnalyzerData)
-		self.Bind(wx.EVT_BUTTON, self.MockstopReadData, self.stopBtn)
+		self.Bind(wx.EVT_BUTTON, self.stopReadData1, self.stopBtn)
 
 	def initalData(self):
 		self.leftSizer.Add(self.startBtn)
 		self.leftSizer.Add(self.nextPointBtn)
 		self.leftSizer.Add(self.upBtn)
 		self.leftSizer.Add(self.downBtn)
+		self.leftSizer.Add(self.slider)
 		pointListGUI = PointListGUI(self, self.model.topology)
 		self.pointListCtrl = pointListGUI.list
 		self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.listItemSelected, self.pointListCtrl)
@@ -104,8 +109,32 @@ class SampleCollectionGUI(wx.Frame):
 				self.selectedPointIndex -= 1
 				self.pointListCtrl.Focus(self.selectedPointIndex)
 				self.pointListCtrl.Select(self.selectedPointIndex)
+				self.currentStepPostion = 0
+				self.slider.SetValue(0)
 			else:
 				wx.MessageBox('Collection finished')
+		else:
+			wx.MessageBox('Please select point to start')
+
+	def upCollect(self, event):
+		if self.currentStepPostion == 0:
+			self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+		if self.currentStepPostion <= 0:
+			self.currentStepPostion = 1
+		else:
+			self.currentStepPostion += 1
+		self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+		self.slider.SetValue(self.currentStepPostion)
+
+	def downCollect(self, event):
+		if self.currentStepPostion == 0:
+			self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+		if self.currentStepPostion >= 0:
+			self.currentStepPostion = -1
+		else:
+			self.currentStepPostion -= 1
+		self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+		self.slider.SetValue(self.currentStepPostion)
 
 	def MockstopReadData(self, event):
 		self.readDataTimer.Stop()
@@ -114,3 +143,6 @@ class SampleCollectionGUI(wx.Frame):
 		self.readDataTimer.Stop()
 		self.analyzerCommunication.closeConnection()
 		self.analyzerCommunication = None
+
+	def stopReadData1(self, event):
+		self.sampleCollectionController.sampleCollectionFinish()	
