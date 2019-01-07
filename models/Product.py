@@ -2,7 +2,9 @@ from typing import List
 from .TuningPhase import TuningPhase
 from .Topology import Topology
 from .VnaConfig import VnaConfig
+from utils.JsonConvert import JsonConvert
 
+@JsonConvert.register
 class Product:
 	def __init__(self, productName: str = "ProductName", topology: Topology = None, vnaConfig: VnaConfig = None, tuningPhases: List[TuningPhase] = None):
 		self.productName: str = productName if productName is not None else'ProductName'

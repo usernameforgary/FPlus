@@ -277,6 +277,7 @@ class TopologyGUI(wx.Panel):
 	def initialViewAndViewModel(self):
 		# index of latest point, not PORT type Point
 		latestNonPortPointIndex = -1
+		pointIndex = 0
 		for modelPoint in self.model.points:
 			guiPositionX = modelPoint.guiPositionX
 			guiPositionY = modelPoint.guiPositionY
@@ -292,8 +293,11 @@ class TopologyGUI(wx.Panel):
 				guiPoint = DraggablePoint(self, (guiPositionX, guiPositionY), 2.5, facecolor='none', edgecolor="black", alpha=None, pointType=PointType.PORT.value)
 			if guiPoint is not None:
 				self.axes.add_patch(guiPoint)
+				self.axes.annotate(str(pointIndex), (guiPositionX+2, guiPositionY+2))
 				guiPoint.connect()
 				self.viewModel.points.append(guiPoint)
+			pointIndex += 1
+			
 		if latestNonPortPointIndex != -1:
 			latestPoint = self.viewModel.points[latestNonPortPointIndex]
 			latestPoint.set_edgecolor('red')

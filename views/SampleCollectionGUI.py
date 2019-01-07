@@ -1,11 +1,13 @@
 import wx
 
+from pubsub import pub
+
+from enumObjs.EnumObjs import ProjectOperate
 from controllers.SampleCollectionController import SampleCollectionController
 from models.TuningPhase import TuningPhase
 from .PointListGUI import PointListGUI
 from .TopologyGUI import TopologyGUI
 from .AnalyzerResponseGUI import AnalyzerResponseGUI
-from utils.AnalyzerCommunication import AnalyzerCommunication
 
 class SampleCollectionGUI(wx.Frame):
 	def __init__(self, model: TuningPhase):
@@ -43,14 +45,14 @@ class SampleCollectionGUI(wx.Frame):
 		self.leftSizer.Add(self.stopBtn)
 
 		# Read data Timer listener	
-		self.Bind(wx.EVT_TIMER, self.MockreadAnalyzerData)
+		self.Bind(wx.EVT_TIMER, self.readAnalyzerData)
 		self.Bind(wx.EVT_BUTTON, self.startReadData, self.startBtn)
 		self.Bind(wx.EVT_BUTTON, self.toNextPoint, self.nextPointBtn)
 		self.Bind(wx.EVT_BUTTON, self.upCollect, self.upBtn)
 		self.Bind(wx.EVT_BUTTON, self.downCollect, self.downBtn)
 		#self.Bind(wx.EVT_BUTTON, self.stopReadData, self.stopBtn)
 		#self.Bind(wx.EVT_TIMER, self.readAnalyzerData)
-		self.Bind(wx.EVT_BUTTON, self.stopReadData1, self.stopBtn)
+		self.Bind(wx.EVT_BUTTON, self.stopReadData, self.stopBtn)
 
 	def initalData(self):
 		self.leftSizer.Add(self.startBtn)
@@ -75,20 +77,13 @@ class SampleCollectionGUI(wx.Frame):
 		self.selectedPointIndex = self.pointListCtrl.GetFocusedItem()
 	def listItemDeSelected(self, event):
 		self.selectedPointIndex = -1
-
-	def readAnalyzerData(self, event):
-		if self.analyzerCommunication is None:
-			self.analyzerCommunication = AnalyzerCommunication.getInstance('192.168.253.253')
-			self.analyzerCommunication.openConnection()
-		xS11, yS11 = self.analyzerCommunication.mockGetDataBySParameterName("S22")
-		# xS22, yS22 = self.analyzerCommunication.getDataBySParameterName("S22")
-		# xS21, yS21 = self.analyzerCommunication.getDataBySParameterName("S21")
-		self.anylyzerResponseGUI.reDrawPlot(xS11,yS11)
-#		self.anylyzerResponseGUI.reDrawPlot(xS11,yS11,xS22,yS22,xS21,yS21)
 	
-	def MockreadAnalyzerData(self, event):	
-		xS11, yS11, xS22, yS22, xS21, yS21 = self.sampleCollectionController.MockReadData()
-		#self.anylyzerResponseGUI.reDrawPlot(xS11,yS11)
+	def readAnalyzerData(self, event):	
+		xS11, yS11, xS22, yS22, xS21, yS21 = self.sampleCollectionController.readDefaultData()
+		if xS11 is None or yS11 is None or xS22 is None or yS22 is None or xS21 is None or yS21 is None:
+			self.readDataTimer.Stop()
+			wx.MessageBox('Can not get property data from analyzer')
+			return
 		self.anylyzerResponseGUI.reDrawPlotAll(xS11,yS11,xS22,yS22,xS21,yS21)
 	
 	def startReadData(self, event):
@@ -117,32 +112,33 @@ class SampleCollectionGUI(wx.Frame):
 			wx.MessageBox('Please select point to start')
 
 	def upCollect(self, event):
+		self.readDataTimer.Stop()
 		if self.currentStepPostion == 0:
-			self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+			self.sampleCollectionController.readDataSingle(self.selectedPointIndex, self.currentStepPostion)
 		if self.currentStepPostion <= 0:
 			self.currentStepPostion = 1
 		else:
 			self.currentStepPostion += 1
-		self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+		self.sampleCollectionController.readDataSingle(self.selectedPointIndex, self.currentStepPostion)
 		self.slider.SetValue(self.currentStepPostion)
+		self.readDataTimer.Start(100)
 
 	def downCollect(self, event):
+		self.readDataTimer.Stop()
 		if self.currentStepPostion == 0:
-			self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+			self.sampleCollectionController.readDataSingle(self.selectedPointIndex, self.currentStepPostion)
 		if self.currentStepPostion >= 0:
 			self.currentStepPostion = -1
 		else:
 			self.currentStepPostion -= 1
-		self.sampleCollectionController.MockReadDataSingle(self.selectedPointIndex, self.currentStepPostion)
+		self.sampleCollectionController.readDataSingle(self.selectedPointIndex, self.currentStepPostion)
 		self.slider.SetValue(self.currentStepPostion)
-
-	def MockstopReadData(self, event):
-		self.readDataTimer.Stop()
+		self.readDataTimer.Start(100)
 
 	def stopReadData(self, event):
 		self.readDataTimer.Stop()
-		self.analyzerCommunication.closeConnection()
+		if self.analyzerCommunication is not None:
+			self.analyzerCommunication.closeConnection()
 		self.analyzerCommunication = None
-
-	def stopReadData1(self, event):
-		self.sampleCollectionController.sampleCollectionFinish()	
+		# Save project to file
+		pub.sendMessage(ProjectOperate.SAVE_TO_FILE.value)

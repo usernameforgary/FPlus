@@ -2,6 +2,9 @@ from typing import List
 from .Point import Point
 from .Line import Line
 
+from utils.JsonConvert import JsonConvert
+
+@JsonConvert.register
 class Topology:
 	def __init__(self, points: List[Point] = None, lines: List[Line] = None):
 		self.points: List[Point] = points if points is not None else []

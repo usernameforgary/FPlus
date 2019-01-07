@@ -50,9 +50,17 @@ class AppGUI(wx.Frame):
 
 		# connect events
 		self.Bind(wx.EVT_TOOL, self.showProjectViewGUI, self.toolNewProject)
+		self.Bind(wx.EVT_TOOL, self.loadProject, self.toolLoadProject)
 
 	def __del__( self ):
 		pass
 
 	def showProjectViewGUI(self, event):
 		pub.sendMessage(AppGUITopics.SHOW_PROEJCT_VIEW_GUI.value)
+
+	def loadProject(self, event):
+		with wx.FileDialog(self, "Select project", wildcard="txt files (*.txt)|*.txt", style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+			if fileDialog.ShowModal() == wx.ID_CANCEL:
+				return
+			filePath = fileDialog.GetPath()
+			pub.sendMessage(AppGUITopics.LOAD_PROJECT.value, projectFilePath = filePath)

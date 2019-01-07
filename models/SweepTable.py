@@ -1,3 +1,6 @@
+from utils.JsonConvert import JsonConvert
+
+@JsonConvert.register
 class SweepTable:
 	def __init__(self, startFreq: float = None, stopFreq: float = None, numberPoints: int = None, IFBW: float = None, Power: float = None):
 		self.startFreq: float = startFreq if startFreq is not None else 0

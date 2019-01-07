@@ -7,6 +7,7 @@ import wx.lib.agw.ultimatelistctrl as ULC
 from pubsub import pub
 from topics.Topics import ProjectViewTopics
 from enumObjs.EnumObjs import ElementType
+from enumObjs.EnumObjs import ProjectOperate
 from models.view_models.TreeItem import TreeItem
 from models.ProjectViewModel import ProjectViewModel
 from models.TuningPhase import TuningPhase
@@ -52,13 +53,10 @@ class ProjectViewGUI(wx.Frame):
 		self.mainSizer = wx.BoxSizer( wx.HORIZONTAL)
 		self.leftSizer = wx.BoxSizer(wx.VERTICAL)
 		self.rightSizer = wx.BoxSizer(wx.VERTICAL)
-		ttButton = wx.StaticText(self, label = "Right Sizer init button")
-		self.rightSizer.Add(ttButton, 1, wx.ALL|wx.EXPAND, 0)
 
 		# Project tree
 		self.projectTreeCtrl = customtreectrl.CustomTreeCtrl( self, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize, 
 																													style=0, agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_EDIT_LABELS, validator=wx.DefaultValidator)
-
 		#show View with initial data
 		if modelData is not None:
 			self.initialView(modelData)
@@ -97,7 +95,10 @@ class ProjectViewGUI(wx.Frame):
 			self.refreshOrInitTreeContrl(initialData.projectTree)
 
 	def onClose(self, event):
-		print('{0}'.format(JsonConvert.ToJSON(self.model)))
+		if(self.model is not None):
+			projectJsonStr = JsonConvert.ToJSON(self.model)
+			with open("C:\\Users\\usern\\Desktop\\" + self.model.projectTree.projectName + ".txt", "w") as text_file:
+				print(projectJsonStr, file=text_file)
 		#event.Veto()
 		#return
 		self.Destroy()
@@ -176,6 +177,7 @@ class ProjectViewGUI(wx.Frame):
 		itemType = itemPyData.itemType
 		itemIndex = itemPyData.itemIndex
 		itemText = itemPyData.itemText
+
 		if (itemType is ElementType.PRODUCT):
 			productIndex = itemIndex[1]
 			product = self.model.projectTree.products[productIndex]
@@ -234,6 +236,7 @@ class ProjectViewGUI(wx.Frame):
 		self.cleanRightSizer()
 		self.rightSizer.Add(replaceGUI, 1, wx.ALL|wx.EXPAND, 0)
 		self.rightSizer.Layout()	
+		self.Layout()
 
 	def showTuningPhaseList(self):
 		#self.tuningPhaseList = ListCtrlNonVirtual(self, tID, style=wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES)

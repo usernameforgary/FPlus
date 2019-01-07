@@ -1,6 +1,10 @@
 from enum import Enum, unique
 
 @unique
+class ProjectOperate(Enum):
+	SAVE_TO_FILE = 'SAVE_TO_FILE'
+
+@unique
 class ElementType(Enum):
 	PROJECT = 'PROJECT'
 	PRODUCT = 'PRODUCT'

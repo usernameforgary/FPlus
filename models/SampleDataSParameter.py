@@ -2,6 +2,9 @@ from typing import List
 
 from .SampleDataPoint import SampleDataPoint
 
+from utils.JsonConvert import JsonConvert
+
+@JsonConvert.register
 class SampleDataSParameter:
 	def __init__(self, dataSParameterName:str = None, dataFrequency:List[str] = None, sampleDataPoints:List[SampleDataPoint] = None):
 		self.dataSParameterName: str = dataSParameterName

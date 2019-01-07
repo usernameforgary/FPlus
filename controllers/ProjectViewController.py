@@ -9,7 +9,9 @@ from models.ProjectViewModel import ProjectViewModel
 from models.ProjectTree import ProjectTree
 from models.Product import Product
 from enumObjs.EnumObjs import ElementType
+from enumObjs.EnumObjs import ProjectOperate
 from .ProductConfigController import ProductConfigController
+from utils.JsonConvert import JsonConvert
 
 class ProjectViewController:
 	def __init__(self, model: ProjectViewModel = None):
@@ -22,9 +24,15 @@ class ProjectViewController:
 		pub.subscribe(self.newProduct, ProjectViewTopics.GUI_NEW_PRDUCT.value)
 		pub.subscribe(self.editProjectOrProductName, ProjectViewTopics.GUI_TREE_ITEM_RENAME.value)
 		pub.subscribe(self.duplicateProduct, ProjectViewTopics.GUI_DUPLICATE_PRODUCT.value)
-					
+		pub.subscribe(self.saveProjectToFile, ProjectOperate.SAVE_TO_FILE.value)
+
 	def showProjectView(self):
 		self.gui.Show()
+
+	def saveProjectToFile(self):
+		projectJsonStr = JsonConvert.ToJSON(self.model)
+		with open("C:\\Users\\usern\\Desktop\\" + self.model.projectTree.projectName + ".txt", "w") as text_file:
+			print(projectJsonStr, file=text_file)
 
 	def newProject(self):
 		projectTree = ProjectTree()

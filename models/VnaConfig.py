@@ -2,6 +2,9 @@ from typing import List
 
 from .SweepTable import SweepTable
 
+from utils.JsonConvert import JsonConvert
+
+@JsonConvert.register
 class VnaConfig:
 	def __init__(self, SParameter: List[str] = None, sweepType: str = None, sweepTables: List[SweepTable] = None):
 		self.SParameter: List[str] = SParameter if SParameter is not None else ['S11']

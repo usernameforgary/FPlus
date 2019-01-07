@@ -21,6 +21,7 @@ class AnalyzerResponseGUI(wx.Panel):
 
 		self.figure = AnalyzerResponseGUI.responseFigure
 		self.axes = self.figure.add_subplot(111)
+		self.axes.set_ylim([-120, 0])
 		x = []
 		y = []
 		self.axes.plot(x,y)
@@ -39,7 +40,11 @@ class AnalyzerResponseGUI(wx.Panel):
 		self.axes.plot(xS11, yS11, 'b-')
 		self.canvas.draw()
 
-	def reDrawPlotAll(self, xS11, yS11, xS22, yS22, xS21, yS21):
+	# TODO this function need to be improved
+	def reDrawPlotAll(self, xS11, yS11, xS22, yS22, xS21, yS21, xS12=None, yS12=None):
 		self.axes.clear()
-		self.axes.plot(xS11, yS11, 'b-', xS22, yS22, 'g-', xS21, yS21, 'c-')
+		if xS12 is not None and yS12 is not None:
+			self.axes.plot(xS11, yS11, 'b-', xS22, yS22, 'g-', xS21, yS21, 'c-', xS12, yS12, 'p-')
+		else:
+			self.axes.plot(xS11, yS11, 'b-', xS22, yS22, 'g-', xS21, yS21, 'c-')
 		self.canvas.draw()
