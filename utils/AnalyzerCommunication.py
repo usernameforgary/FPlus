@@ -57,6 +57,9 @@ class AnalyzerCommunication:
 	def getDataBySParameterName(self, SparameterName):
 		try:	
 			#read frequency
+			self.session.write(":TRIG:SING")	
+			self.session.write("*OPC?")
+			OPCReturn = self.session.read()
 			self.session.write(':SENS1:FREQ:DATA?')
 			freqStr = self.session.read()
 			freqStrList = freqStr.split(',')
