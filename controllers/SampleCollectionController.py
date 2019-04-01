@@ -1,6 +1,6 @@
 from models.TuningPhase import TuningPhase
 
-from utils.MockCommunication import mockGetDataBySParameterName
+# from utils.MockCommunication import mockGetDataBySParameterName
 from models.SampleDataSParameter import SampleDataSParameter
 from models.SampleDataPoint import SampleDataPoint
 from models.SampleDataPosition import SampleDataPosition
@@ -12,11 +12,11 @@ class SampleCollectionController:
 		self.model = model
 		self.analyzerCommunication = None
 
-	def MockReadData(self):
-		xS11, yS11 = mockGetDataBySParameterName("S11")
-		xS22, yS22 = mockGetDataBySParameterName("S22")
-		xS21, yS21 = mockGetDataBySParameterName("S21")
-		return (xS11, yS11, xS22, yS22, xS21, yS21)
+	# def MockReadData(self):
+	# 	xS11, yS11 = mockGetDataBySParameterName("S11")
+	# 	xS22, yS22 = mockGetDataBySParameterName("S22")
+	# 	xS21, yS21 = mockGetDataBySParameterName("S21")
+	# 	return (xS11, yS11, xS22, yS22, xS21, yS21)
 
 	# TODO, currently default read S11, S22, S21
 	def readDefaultData(self):
