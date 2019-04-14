@@ -41,7 +41,6 @@ class SampleCollectionController:
 		sParameterNames = self.model.vnaConfig.SParameter
 		self.analyzerCommunication = AnalyzerCommunication.getInstance('192.168.253.253')
 		self.analyzerCommunication.openConnection()
-
 		if self.analyzerCommunication.session is not None:
 			for sParameterName in sParameterNames:
 				if self.model.sampleDataSParameters is None:
